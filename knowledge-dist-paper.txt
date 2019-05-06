@@ -1,0 +1,6 @@
+Distilling the Knowledge in a Neural Network, Geoffrey Hinton, Oriol Vinyals, Jeff Dean
+
+Model Distillation with Knowledge Transfer from Face Classification to Alignment and Verification, Chong Wang, Xipeng Lan, Yangang Zhang
+
+FitNets: Hints for Thin Deep Nets, Adriana Romero, Nicolas Ballas, Samira Ebrahimi Kahou, Antoine Chassang, Carlo Gatta, Yoshua Bengio - defines KD loss
+

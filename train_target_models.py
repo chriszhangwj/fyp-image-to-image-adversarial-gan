@@ -131,7 +131,6 @@ if __name__ == '__main__':
     model = getattr(target_models, model_name)(in_channels, num_classes)
     model.cuda()
 
-
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0005)
     criterion = nn.CrossEntropyLoss().cuda()
     scheduler = StepLR(optimizer, step_size=5, gamma=0.3)

@@ -86,7 +86,6 @@ def distillation_loss_function(model_pred, model_pred_T, teach_pred_T, target, T
     return nn.KLDivLoss()(model_pred_T, teach_pred_T) * (T * T * alpha) +\
         nn.CrossEntropyLoss()(model_pred, target) * (1 - alpha)
 
-
 def distill(student, teacher, T, optimizer, nb_epochs=30, alpha=0.9): # input arguments: distill model, blackbox model and temperature 
     student.T = T
     teacher.T = T
@@ -120,7 +119,7 @@ big_network = FCNetwork(800)
 optimizer = optim.Adam(big_network.parameters())
 loss_function = nn.CrossEntropyLoss()
 train(big_network, optimizer, loss_function, 5) 
-print("teacher accuracy : ", accuracy(big_network))
+print("teacher accuracy : ", accuracy(big_network)) # accuracy for train set
 
 small_network = FCNetwork(30, d=0.1) # dropout rate 0.1
 optimizer = optim.Adam(small_network.parameters())

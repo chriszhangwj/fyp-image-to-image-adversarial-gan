@@ -119,4 +119,4 @@ if __name__ == '__main__':
                     "state_dict": G.state_dict(),
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
-                    }, "saved/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
+                    }, "saved/distill/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))

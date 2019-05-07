@@ -33,13 +33,16 @@ def train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alp
             loss_adv = criterion_adv(y_pred, y_true, is_targeted)
             acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
 
-        # Generator loss
+        # GAN Generator loss
         loss_gan = criterion_gan(D(img_fake), valid)
         # perturbation loss
         loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
-
+        # total generator loss
         loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
-
+        # alternative loss functions as described in paper
+        #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
+        #loss_g = loss_hinge + loss_adv # pert loss + adv loss
+        
         loss_g.backward(torch.ones_like(loss_g))
         optimizer_G.step()
 
@@ -48,9 +51,7 @@ def train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alp
             # Train the Discriminator
             loss_real = criterion_gan(D(img_real), valid)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
-
             loss_d = 0.5*loss_real + 0.5*loss_fake
-
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 

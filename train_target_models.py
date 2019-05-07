@@ -13,16 +13,13 @@ import time
 import shutil
 
 # from tensorboardX import SummaryWriter
-
 from prepare_dataset import load_dataset
 import target_models
-
 
 def save_checkpoint(state, checkpoint_name, best_name):
     torch.save(state, checkpoint_name)
     if state['is_best']==True:
         shutil.copyfile(checkpoint_name, best_name)
-
 
 def train(model, train_loader, criterion, optimizer, epoch, epochs):
     model.train()
@@ -54,7 +51,6 @@ def train(model, train_loader, criterion, optimizer, epoch, epochs):
 
     return train_loss/n, train_acc/n
 
-
 def test(model, test_loader, criterion, epoch, epochs):
     model.eval()
 
@@ -79,9 +75,6 @@ def test(model, test_loader, criterion, epoch, epochs):
             %(epoch+1, epochs, i+1, len(test_loader), test_loss/n, test_acc/n), end="\r")
 
     return test_loss/n, test_acc/n
-
-
-
 
 if __name__ == '__main__':
 
@@ -118,14 +111,12 @@ if __name__ == '__main__':
     print('num_workers: ', num_workers)
     print('-'*30)
 
-
     torch.manual_seed(seed)
 
     # load dataset
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-
 
     # load model
     model = getattr(target_models, model_name)(in_channels, num_classes)
@@ -135,18 +126,12 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss().cuda()
     scheduler = StepLR(optimizer, step_size=5, gamma=0.3)
 
-
-    # writer = SummaryWriter(log_dir="visualization/graphs", comment="loss_acc_curves")
-
     best_acc = 0
     for epoch in range(epochs):
-
         t0 = time.time()
         train_loss, train_acc = train(model, train_loader, criterion, optimizer, epoch, epochs)
         t1 = time.time()
-
         test_loss, test_acc = test(model, test_loader, criterion, epoch, epochs)
-
         scheduler.step()
 
         print("  "*40)
@@ -160,11 +145,6 @@ if __name__ == '__main__':
         print('Train Acc: %.8f' %(train_acc))
         print('Test Acc:  %.8f' %(test_acc))
         print()
-
-        # writer.add_scalar('train_loss', train_loss, epoch)
-        # writer.add_scalar('train_acc', train_acc, epoch)
-        # writer.add_scalar('test_loss', test_loss, epoch)
-        # writer.add_scalar('test_acc', test_acc, epoch)
 
         is_best = test_acc > best_acc
         best_acc = max(best_acc, test_acc)

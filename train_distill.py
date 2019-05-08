@@ -101,7 +101,8 @@ def save_checkpoint(state, checkpoint_name, best_name):
 # Target network
 target_network = Model_C(in_channels,num_classes)
 target_network.cuda()
-epochs=10 
+epochs=10
+best_acc = 0 
 for epoch in range(epochs):    
     #optimizer = optim.Adam(target_network.parameters())
     optimizer = optim.SGD(target_network.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005)
@@ -115,6 +116,21 @@ for epoch in range(epochs):
     print('Train Acc: %.8f' %(train_acc))
     print('Test Acc:  %.8f' %(test_acc))
     print('-'*30)
+    is_best = test_acc > best_acc
+    best_acc = max(best_acc, test_acc) # save the best trained distill model
+    save_checkpoint({"epoch": epoch,
+                    "state_dict": target_network.state_dict(),
+                    "best_acc": best_acc,
+                    "optimizer": optimizer.state_dict(),
+                    "is_best": is_best,
+                    }, checkpoint_name="saved/target_models/distill/checkpoint_%d_Model_C_mnist.pth.tar"%(epoch),
+                        best_name="saved/target_models/distill/best_Model_C_mnist.pth.tar")
+
+
+# Note: the target model is trained with training data, and is considered as a blackbox. The distill model is 
+# trained with testing data because we assume no access to the data on which the target model is trained 
+# (i.e. the training data). Hence, we can assume full access to the data we use to query the target model
+# (i.e. the testing data), including their ground-truth labels
     
 #small_network = Model_distill(in_channels,num_classes)
 #small_network.cuda()     
@@ -138,10 +154,10 @@ distill_network.cuda()
 epochs = 50  
 best_acc = 0
 for epoch in range(epochs):    
-    optimizer = optim.Adam(distill_network.parameters())
+    optimizer = optim.Adam(distill_network.parameters()) # SGD gives worse training process
     criterion = nn.CrossEntropyLoss().cuda()
     loss_function = nn.CrossEntropyLoss()
-    distill(distill_network, target_network, 5, optimizer, epoch, epochs, 1.0) # hyperparameters T and alpha # using alpha=1.0 we assume no target labels available
+    distill(distill_network, target_network, 5, optimizer, epoch, epochs, 0.6) # hyperparameters T and alpha # using alpha=1.0 we assume no target labels available
     print("  "*40)
     print("Distillation network")
     print('Epoch [%3d/%3d]'%(epoch+1, epochs))
@@ -149,16 +165,16 @@ for epoch in range(epochs):
     _, test_acc = test_distill(distill_network, train_loader, criterion) 
     print('Test Acc: %.8f' %(test_acc))
     
-#    is_best = test_acc > best_acc
-#    best_acc = max(best_acc, test_acc)
-#    save_checkpoint({"epoch": epoch,
-#                    "state_dict": distill_network.state_dict(),
-#                    "best_acc": best_acc,
-#                    "optimizer": optimizer.state_dict(),
-#                    "is_best": is_best,
-#                    }, checkpoint_name="saved/target_models/distill/checkpoint_%d_Model_C_mnist.pth.tar"%(epoch),
-#                        best_name="best_distil_%s_%s.pth.tar"%(model_name, dataset_name))
-
+    is_best = test_acc > best_acc
+    best_acc = max(best_acc, test_acc) # save the best trained distill model
+    save_checkpoint({"epoch": epoch,
+                    "state_dict": distill_network.state_dict(),
+                    "best_acc": best_acc,
+                    "optimizer": optimizer.state_dict(),
+                    "is_best": is_best,
+                    }, checkpoint_name="saved/target_models/distill/checkpoint_%d_distill_Model_C_mnist.pth.tar"%(epoch),
+                        best_name="saved/target_models/distill/best_distill_Model_C_mnist.pth.tar")
+print('Best Test Acc: %.8f'%(best_acc))
     
 #    
     

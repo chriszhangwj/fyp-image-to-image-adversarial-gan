@@ -37,7 +37,7 @@ def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Train AdvGAN')
-    parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
+    parser.add_argument('--model', type=str, default="Model_distill", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--epochs', type=int, default=15, required=False, help='no. of epochs (default: 30)')
     parser.add_argument('--batch_size', type=int, default=128, required=False, help='batch size (default: 128)')
     parser.add_argument('--lr', type=float, default=0.001, required=False, help='learning rate (default: 0.001)')
@@ -57,13 +57,12 @@ if __name__ == '__main__':
     gpu = args.gpu
 
     dataset_name = 'mnist' # Only MNIST implemented for now
-
     target = 6 # alternatively can set variable here
     is_targeted = False
     if target in range(0, 10):
         is_targeted = True # bool variable to indicate targeted or untargeted attack
 
-    print('Training AdvGAN ', '(Target %d)'%(target) if is_targeted else '(Untargeted)')
+    print('Training AdvGAN with distillation model', '(Target %d)'%(target) if is_targeted else '(Untargeted)')
 
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
@@ -71,16 +70,25 @@ if __name__ == '__main__':
 
     D = Discriminator()
     G = Generator()
-    f = getattr(target_models, model_name)(in_channels, num_classes)
-
-    checkpoint_path = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
+    
+    # load target (distill) model (for training)
+    d = getattr(target_models, model_name)(in_channels, num_classes)
+    checkpoint_path = os.path.join('saved', 'target_models', 'distill', 'best_distill_Model_C_mnist.pth.tar')
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    d.load_state_dict(checkpoint["state_dict"])
+    d.eval()
+    
+    # load target (blackbox) model (for evaluation)
+    f = getattr(target_models, 'Model_C')(in_channels, num_classes)
+    checkpoint_path = os.path.join('saved', 'target_models', 'distill', 'best_Model_C_mnist.pth.tar')
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
     f.load_state_dict(checkpoint["state_dict"])
     f.eval()
-
+    
     if gpu:
         D.cuda()
         G.cuda()
+        d.cuda()
         f.cuda()
 
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
@@ -99,7 +107,9 @@ if __name__ == '__main__':
     device = 'cuda' if gpu else 'cpu'
 
     for epoch in range(epochs):
-        acc_train = train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        # train GAN (Generator and Discriminator)
+        acc_train = train(G, D, d, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        # test attack success rate with target model
         acc_test = test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
 
         scheduler_G.step()
@@ -107,8 +117,8 @@ if __name__ == '__main__':
 
         print("     "*20, end="\r")
         print('Epoch [%d/%d]\t\t\t'%(epoch+1, epochs))
-        print('Train Acc: %.5f'%(acc_train))
-        print('Test Acc: %.5f'%(acc_test))
+        print('Train Acc: %.5f'%(acc_train)) # attack success rate by Distillation model
+        print('Test Acc: %.5f'%(acc_test)) # attack success rate by Target model
         print('\n')
 
         torch.save({"epoch": epoch+1,
@@ -119,4 +129,4 @@ if __name__ == '__main__':
                     "state_dict": G.state_dict(),
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
-                    }, "saved/distill/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
+                    }, "saved/target_models/distill/generator/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))

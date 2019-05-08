@@ -27,13 +27,12 @@ if __name__ == '__main__':
         is_targeted = True
 
 
-    # load target_model
+    # load target model
     f = getattr(target_models, model_name)(1, 10)
     checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
     checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
     f.load_state_dict(checkpoint_f["state_dict"])
     f.eval()
-
 
     # load corresponding generator
     G = Generator()
@@ -42,7 +41,6 @@ if __name__ == '__main__':
     checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
     G.load_state_dict(checkpoint_G['state_dict'])
     G.eval()
-
 
     # load img and preprocess as required by f and G
     orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE) # img_path is the path to the image to be perturbed; images/0.jpg by default
@@ -81,4 +79,5 @@ if __name__ == '__main__':
             if is_targeted == False:
                 cv2.imwrite('untargeted_%d.png'%(y_after.item()), adversarial_img)
             break
+        
 cv2.destroyAllWindows()

@@ -79,7 +79,6 @@ def test(model, test_loader, criterion, epoch, epochs):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Train your model..')
-
     parser.add_argument('--dataset', type=str, default='mnist', choices=['mnist', 'fmnist', 'cifar10', 'cifar100'], required=False, help='dataset (default: mnist)')
     parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--pretrained', type=int, default=1, choices=[0, 1], required=False, help='load imagenet weights? (default: True)')
@@ -154,6 +153,6 @@ if __name__ == '__main__':
                         "optimizer": optimizer.state_dict(),
                         "is_best": is_best,
                         }, checkpoint_name="saved/target_models/checkpoint_%d_%s_%s.pth.tar"%(epoch, model_name, dataset_name),
-                            best_name="best_%s_%s.pth.tar"%(model_name, dataset_name))
+                            best_name="saved/target_models/best_%s_%s.pth.tar"%(model_name, dataset_name))
 
     # writer.close()

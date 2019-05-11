@@ -5,7 +5,8 @@ from generators import Generator_MNIST as Generator
 from test_function import test
 from prepare_dataset import load_dataset
 from train_function import train
-from test_function import test
+from test_function import test_semitargeted
+import pytorch_ssim
 
 import cv2
 import numpy as np
@@ -67,31 +68,33 @@ if __name__ == '__main__':
 
     print('Prediction before attack: %d [Prob: %0.4f]'%(y_before.item(), prob_before.item()))
     print('After attack: %d [Prob: %0.4f]'%(y_after.item(), prob_after.item()))
+    #print('SSIM: %d', (pytorch_ssim.ssim(x, x_adv)))
     
     # compute test attack success rate
-#    device = 'cuda' if gpu else 'cpu'
-#    if gpu:
-#        G.cuda()
-#        f.cuda()
-#    batch_size=128
-#    train_data, test_data, in_channels, num_classes = load_dataset('mnist')
-#    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
-#    acc_test, len_testloader = test(G, f, target, is_targeted, thres, test_loader, 1, 1, device, verbose=True)
-#    print('Test Acc: %.5f'%(acc_test))
+    device = 'cuda' if gpu else 'cpu'
+    if gpu:
+        G.cuda()
+        f.cuda()
+    batch_size=1
+    train_data, test_data, in_channels, num_classes = load_dataset('mnist')
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
+    acc_test, loss_ssim = test_semitargeted(G, f, thres, test_loader, 1, 1, device, verbose=True)
+    print('Test Acc: %.5f'%(acc_test))
+    print('SIMM: %.5f'%(loss_ssim))
 
-    while True:
-        cv2.imshow('Adversarial Image', adversarial_img)
-#        cv2.imshow('Perturbation', perturbation)
-#        cv2.imshow('Image', orig)
-
-        key = cv2.waitKey(10) & 0xFF
-        if key == 27: # if ESC is pressed
-            break
-        if key == ord('s'):
-            d = 0
-            adversarial_img = adversarial_img*255 # restore to [0,255]
-            adversarial_img = adversarial_img.astype(np.uint8) # set data type
-            cv2.imwrite('saved/target_models/semitargeted/semitargeted_%d_%d.png'%(digit, y_after.item()), adversarial_img)
-            break
-        
-cv2.destroyAllWindows()
+#    while True:
+#        cv2.imshow('Adversarial Image', adversarial_img)
+##        cv2.imshow('Perturbation', perturbation)
+##        cv2.imshow('Image', orig)
+#
+#        key = cv2.waitKey(10) & 0xFF
+#        if key == 27: # if ESC is pressed
+#            break
+#        if key == ord('s'):
+#            d = 0
+#            adversarial_img = adversarial_img*255 # restore to [0,255]
+#            adversarial_img = adversarial_img.astype(np.uint8) # set data type
+#            cv2.imwrite('saved/target_models/semitargeted/semitargeted_%d_%d.png'%(digit, y_after.item()), adversarial_img)
+#            break
+#        
+#cv2.destroyAllWindows()

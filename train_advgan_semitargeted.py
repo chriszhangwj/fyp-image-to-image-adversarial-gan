@@ -49,9 +49,6 @@ def CWLoss(logits, target, num_classes=10, kappa=0):
     #print(target_one_hot.size()) # torch.Size([128, 10])
     #print(logits.type()) # torch.cuda.FloatTensor
     #print(logits.size()) # torch.Size([128, 10])
-    # workaround here.
-    # subtract large value from target class to find other max value
-    # https://github.com/carlini/nn_robust_attacks/blob/master/l2_attack.py
     
     #print(len(target_one_hot)) # 128
     real = torch.sum(target_one_hot*logits, 1)
@@ -91,7 +88,6 @@ if __name__ == '__main__':
 
     # alternatively set parameters here
     model = 'Model_C'
-    img_path = 'images/0.jpg'
     is_targeted = True # semi targeted
   
     print('Training AdvGAN (Semitargeted)')
@@ -125,13 +121,13 @@ if __name__ == '__main__':
     alpha = 1 # gan loss multiplication factor
     beta = 1 # for hinge loss
     num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.2 # perturbation bound, used in loss_hinge
+    thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
 
     for epoch in range(epochs):
         acc_train = train_semitargeted(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test = test_semitargeted(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
+        acc_test, _ = test_semitargeted(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
 
         scheduler_G.step()
         scheduler_D.step()

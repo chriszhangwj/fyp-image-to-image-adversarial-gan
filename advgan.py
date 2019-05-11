@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 import target_models
 from generators import Generator_MNIST as Generator
-from test_function import test
 from prepare_dataset import load_dataset
 from train_function import train
 from test_function import test
@@ -28,10 +27,10 @@ if __name__ == '__main__':
     gpu = args.gpu   
     
     # alternatively set parameters here
-    thres = 0.2
-    model = 'Model_C'
+    thres = 0.3
+    model_name = 'Model_C'
     digit = 2
-    target = 9
+    target = -1
     img_path = 'images/%d.jpg'%(digit)
 
     is_targeted = False
@@ -49,6 +48,7 @@ if __name__ == '__main__':
     G = Generator()
     checkpoint_name_G = '%s_target_%d.pth.tar'%(model_name, target) if is_targeted else '%s_untargeted.pth.tar'%(model_name)
     checkpoint_path_G = os.path.join('saved', 'generators', 'bound_%.1f'%(thres), checkpoint_name_G)
+    #checkpoint_path_G = os.path.join('saved','Model_C_untargeted.pth.tar')
     checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
     G.load_state_dict(checkpoint_G['state_dict'])
     G.eval()
@@ -76,32 +76,33 @@ if __name__ == '__main__':
     print('After attack: %d [Prob: %0.4f]'%(y_after.item(), prob_after.item()))
     
     # compute test attack success rate
-#    device = 'cuda' if gpu else 'cpu'
-#    if gpu:
-#        G.cuda()
-#        f.cuda()
-#    batch_size=128
-#    train_data, test_data, in_channels, num_classes = load_dataset('mnist')
-#    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
-#    acc_test = test(G, f, target, is_targeted, thres, test_loader, 1, 1, device, verbose=True)
-#    print('Test Acc: %.5f'%(acc_test))
+    device = 'cuda' if gpu else 'cpu'
+    if gpu:
+        G.cuda()
+        f.cuda()
+    batch_size=1
+    train_data, test_data, in_channels, num_classes = load_dataset('mnist')
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
+    acc_test, loss_ssim = test(G, f, target, is_targeted, thres, test_loader, 1, 1, device, verbose=True)
+    print('Test Acc: %.5f'%(acc_test))
+    print('SIMM: %.5f'%(loss_ssim))
 
-    while True:
-        cv2.imshow('Adversarial Image', adversarial_img)
-#        cv2.imshow('Perturbation', perturbation)
-#        cv2.imshow('Image', orig)
-
-        key = cv2.waitKey(10) & 0xFF
-        if key == 27: # if ESC is pressed
-            break
-        if key == ord('s'):
-            d = 0
-            adversarial_img = adversarial_img*255 # restore to [0,255]
-            adversarial_img = adversarial_img.astype(np.uint8) # set data type
-            if is_targeted == True:
-                cv2.imwrite('targeted_%d_%d_%d.png'%(digit, target, y_after.item()), adversarial_img)
-            if is_targeted == False:
-                cv2.imwrite('untargeted_%d_%d.png'%(digit, y_after.item()), adversarial_img)
-            break
-        
-cv2.destroyAllWindows()
+#    while True:
+#        cv2.imshow('Adversarial Image', adversarial_img)
+##        cv2.imshow('Perturbation', perturbation)
+##        cv2.imshow('Image', orig)
+#
+#        key = cv2.waitKey(10) & 0xFF
+#        if key == 27: # if ESC is pressed
+#            break
+#        if key == ord('s'):
+#            d = 0
+#            adversarial_img = adversarial_img*255 # restore to [0,255]
+#            adversarial_img = adversarial_img.astype(np.uint8) # set data type
+#            if is_targeted == True:
+#                cv2.imwrite('targeted_%d_%d_%d.png'%(digit, target, y_after.item()), adversarial_img)
+#            if is_targeted == False:
+#                cv2.imwrite('untargeted_%d_%d.png'%(digit, y_after.item()), adversarial_img)
+#            break
+#        
+#cv2.destroyAllWindows()

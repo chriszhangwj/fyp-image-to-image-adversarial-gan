@@ -99,13 +99,13 @@ if __name__ == '__main__':
     alpha = 1 # gan loss multiplication factor
     beta = 1 # for hinge loss
     num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.2 # perturbation bound, used in loss_hinge
+    thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
 
     for epoch in range(epochs):
         acc_train = train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test = test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
+        acc_test, _ = test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
 
         scheduler_G.step()
         scheduler_D.step()

@@ -68,7 +68,8 @@ def train_semitargeted(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta
     acc = 0 # attack success rate
     num_steps = num_steps
     #target_pair = {'0':'5','1':'8','2':'8','3':'5','4':'9','5':'3','6':'2','7':'9','8':'5','9':'4'} # source-target pair dictionary
-    target_pair = {0:5,1:8,2:8,3:5,4:9,5:3,6:2,7:9,8:5,9:4} # source-target pair dictionary
+    #target_pair = {0:5,1:8,2:8,3:5,4:9,5:3,6:2,7:9,8:5,9:4} # source-target pair dictionary L2-norm
+    target_pair = {0:5,1:8,2:3,3:5,4:9,5:8,6:2,7:9,8:5,9:4} # source-target pair dictionary SSIM
 
     G.train()
     D.train()

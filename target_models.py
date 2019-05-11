@@ -63,8 +63,8 @@ class Model_C(nn.Module):
         self.conv2_1 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.conv2_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.maxpool2 = nn.MaxPool2d(kernel_size=2)
-        self.fc1 = nn.Linear(7*7*64, 200)
-        self.fc2 = nn.Linear(200, self.num_classes)
+        self.fc1 = nn.Linear(7*7*64, 64)
+        self.fc2 = nn.Linear(64, self.num_classes)
         #self.softmax = nn.Softmax()
 
     def forward(self, x):
@@ -75,11 +75,13 @@ class Model_C(nn.Module):
         x = F.relu(self.conv2_2(x))
         x = self.maxpool2(x)
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
+        o = self.fc1(x)
+        x = F.relu(o)
+        #x = F.relu(self.fc1(x))
         x = self.fc2(x)
         #x = x / self.T
         #return self.softmax(x)
-        return x
+        return x, o
 
 class Model_distill(nn.Module): # use LeNet-5 used as distill model
     def __init__(self, in_channels, num_classes, T=1):

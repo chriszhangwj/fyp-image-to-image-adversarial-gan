@@ -3,7 +3,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pytorch_ssim
 import torch
-from torch.autograd import Variable
 from tensorflow.examples.tutorials.mnist import input_data
 device = 'cuda'
 
@@ -80,7 +79,6 @@ for i in range(len(digits)):
 #ax.set_title("Harvest of local farmers (in tons/year)")
 fig.tight_layout()
 plt.show()
-
 
 # Final selection (find the highest SSIM scores)
 # 0 - 5

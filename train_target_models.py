@@ -7,7 +7,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 from torch.autograd import Variable
 
 import numpy as np
-import cv2
 import argparse
 import time
 import shutil
@@ -33,7 +32,7 @@ def train(model, train_loader, criterion, optimizer, epoch, epochs):
 
         optimizer.zero_grad()
 
-        out = model(X)
+        out, _ = model(X)
         _, y_pred = torch.max(out.data, 1)
 
         loss = criterion(out, y)
@@ -60,7 +59,7 @@ def test(model, test_loader, criterion, epoch, epochs):
         X = Variable(X.float().cuda())
         y = Variable(y.long().cuda())
 
-        out = model(X)
+        out, _ = model(X)
         _, y_pred = torch.max(out.data, 1)
 
         loss = criterion(out, y)
@@ -82,7 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--pretrained', type=int, default=1, choices=[0, 1], required=False, help='load imagenet weights? (default: True)')
 
-    parser.add_argument('--epochs', type=int, default=100, required=False, help='no. of epochs (default: 20)')
+    parser.add_argument('--epochs', type=int, default=20, required=False, help='no. of epochs (default: 20)')
     parser.add_argument('--batch_size', type=int, default=128, required=False, help='batch size (default: 128)')
     parser.add_argument('--lr', type=float, default=0.01, required=False, help='learning rate (default: 0.01)')
 

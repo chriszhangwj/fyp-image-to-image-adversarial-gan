@@ -53,7 +53,6 @@ def train(model, train_loader, criterion, optimizer, epoch, epochs):
 
 def test(model, test_loader, criterion, epoch, epochs):
     model.eval()
-
     n = 0
     test_loss, test_acc = 0.0, 0.0
 
@@ -83,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--pretrained', type=int, default=1, choices=[0, 1], required=False, help='load imagenet weights? (default: True)')
 
-    parser.add_argument('--epochs', type=int, default=50, required=False, help='no. of epochs (default: 20)')
+    parser.add_argument('--epochs', type=int, default=100, required=False, help='no. of epochs (default: 20)')
     parser.add_argument('--batch_size', type=int, default=128, required=False, help='batch size (default: 128)')
     parser.add_argument('--lr', type=float, default=0.01, required=False, help='learning rate (default: 0.01)')
 

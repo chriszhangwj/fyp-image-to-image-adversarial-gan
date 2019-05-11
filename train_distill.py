@@ -98,6 +98,11 @@ def save_checkpoint(state, checkpoint_name, best_name):
     if state['is_best']==True:
         shutil.copyfile(checkpoint_name, best_name)
 
+# Note: the target model is trained with training data, and is considered as a blackbox. The distill model is 
+# trained with testing data because we assume no access to the data on which the target model is trained 
+# (i.e. the training data). Hence, we can assume full access to the data we use to query the target model
+# (i.e. the testing data), including their ground-truth labels
+
 # Target network
 target_network = Model_C(in_channels,num_classes)
 target_network.cuda()
@@ -125,12 +130,6 @@ for epoch in range(epochs):
                     "is_best": is_best,
                     }, checkpoint_name="saved/target_models/distill/checkpoint_%d_Model_C_mnist.pth.tar"%(epoch),
                         best_name="saved/target_models/distill/best_Model_C_mnist.pth.tar")
-
-
-# Note: the target model is trained with training data, and is considered as a blackbox. The distill model is 
-# trained with testing data because we assume no access to the data on which the target model is trained 
-# (i.e. the training data). Hence, we can assume full access to the data we use to query the target model
-# (i.e. the testing data), including their ground-truth labels
     
 #small_network = Model_distill(in_channels,num_classes)
 #small_network.cuda()     
@@ -157,7 +156,7 @@ for epoch in range(epochs):
     optimizer = optim.Adam(distill_network.parameters()) # SGD gives worse training process
     criterion = nn.CrossEntropyLoss().cuda()
     loss_function = nn.CrossEntropyLoss()
-    distill(distill_network, target_network, 5, optimizer, epoch, epochs, 0.6) # hyperparameters T and alpha # using alpha=1.0 we assume no target labels available
+    distill(distill_network, target_network, 10, optimizer, epoch, epochs, 0.1) # hyperparameters T and alpha # using alpha=1.0 we assume no target labels available
     print("  "*40)
     print("Distillation network")
     print('Epoch [%3d/%3d]'%(epoch+1, epochs))

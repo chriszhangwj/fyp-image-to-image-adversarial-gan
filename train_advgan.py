@@ -21,12 +21,12 @@ import argparse
 def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
     # inputs to the softmax function are called logits.
     # https://arxiv.org/pdf/1608.04644.pdf
-    target_one_hot = torch.eye(num_classes).type(logits.type())[target.long()]
-
+    target_one_hot = torch.eye(num_classes).type(logits.type())[target.long()] # one hot vector for the target label
+    #print(logits.size())
     # workaround here.
     # subtract large value from target class to find other max value
     # https://github.com/carlini/nn_robust_attacks/blob/master/l2_attack.py
-    real = torch.sum(target_one_hot*logits, 1)
+    real = torch.sum(target_one_hot*logits, 1) # element-wise multiplication by *
     other = torch.max((1-target_one_hot)*logits - (target_one_hot*10000), 1)[0]
     kappa = torch.zeros_like(other).fill_(kappa)
 
@@ -58,7 +58,12 @@ if __name__ == '__main__':
 
     dataset_name = 'mnist' # Only MNIST implemented for now
 
-    target = 6 # alternatively can set variable here
+    # alternatively set parameters here
+    target = -1
+    model = 'Model_C'
+    img_path = 'images/0.jpg'
+    #epochs=1
+    
     is_targeted = False
     if target in range(0, 10):
         is_targeted = True # bool variable to indicate targeted or untargeted attack
@@ -94,7 +99,7 @@ if __name__ == '__main__':
     alpha = 1 # gan loss multiplication factor
     beta = 1 # for hinge loss
     num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.3 # perturbation bound, used in loss_hinge
+    thres = c = 0.2 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
 

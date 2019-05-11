@@ -90,7 +90,6 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
 
     # alternatively set parameters here
-    thres = 0.3
     model = 'Model_C'
     img_path = 'images/0.jpg'
     is_targeted = True # semi targeted
@@ -126,7 +125,7 @@ if __name__ == '__main__':
     alpha = 1 # gan loss multiplication factor
     beta = 1 # for hinge loss
     num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.3 # perturbation bound, used in loss_hinge
+    thres = c = 0.2 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
 
@@ -149,4 +148,4 @@ if __name__ == '__main__':
                     "state_dict": G.state_dict(),
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
-                    }, "saved/target_models/semitargeted/generator/%s_%s.pth.tar"%(model_name, 'semitargeted'))
+                    }, "saved/target_models/semitargeted/generators/bound_%.1f/%s_%s.pth.tar"%(thres, model_name, 'semitargeted'))

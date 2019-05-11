@@ -2,7 +2,6 @@ import torch
 from torch.autograd import Variable
 #from operator import itemgetter
 
-
 def train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
     n = 0
     acc = 0 # attack success rate

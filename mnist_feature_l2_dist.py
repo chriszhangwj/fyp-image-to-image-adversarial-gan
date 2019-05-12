@@ -17,7 +17,6 @@ from prepare_dataset import load_dataset
 #X_test = np.vstack([img.reshape(-1,) for img in mnist.test.images])
 #y_test = mnist.test.labels
 
-
 def get_feature(f, train_loader, device):
     feature_vec = np.array([]).reshape(0,64)
     #print(np.shape(feature_vec))
@@ -42,7 +41,7 @@ def get_mnist(train_loader):
         img = img.view(1,-1)
         label = label.view(1,-1)
         image_vec = np.vstack([image_vec,img])
-        label_vec = np.vstack([label_vec,img])
+        label_vec = np.vstack([label_vec,label])
         if i%1000 == 0:
             print(i)
     return image_vec, label_vec
@@ -58,54 +57,66 @@ f.eval()
 f.cuda()
 
 # get features for training set
-train_data, test_data, in_channels, num_classes = load_dataset('mnist')
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4) # do not shuffle data
+#train_data, test_data, in_channels, num_classes = load_dataset('mnist')
+#train_loader = torch.utils.data.DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4) # do not shuffle data
 #feature = get_feature(f,train_loader,device) # feature is float64, (60000,dim_feature)
 #np.savetxt("feature_200_mnist.csv", feature, delimiter=",")
 feature = np.genfromtxt("feature_200_mnist.csv", delimiter=',')
+feature = feature[0:10000,:]
 #print(np.shape(feature)) # (60000,dim_feature)
 #print(type(feature)) # <class 'numpy.ndarray'>
 
-print(len(train_data)) # 60000
+#print(len(train_data)) # 60000
 
-image_vec, label_vec = get_mnist(train_loader)
-np.savetxt("mnist_train_image_numpy.csv", image_vec, delimiter=",")
-np.savetxt("mnist_train_label_numpy.csv", label_vec, delimiter=",")
+#image_vec, label_vec = get_mnist(train_loader)
+#np.savetxt("mnist_train_image_numpy.csv", image_vec, delimiter=",")
+#np.savetxt("mnist_train_label_numpy.csv", label_vec, delimiter=",")
 #print(np.shape(train_data))
 
+#image_vec = np.genfromtxt("mnist_train_image_numpy.csv", delimiter=',')
+label_vec = np.genfromtxt("mnist_train_label_numpy.csv", delimiter=',')
+label_vec = label_vec[0:10000]
+print(np.shape(feature))
+#print(np.shape(label_vec))
+# print(len(feature))
+
 # different-class nearest-neighbour search
+j_idx_dict = np.zeros((10000,1))
+for i in range(len(feature)): # i for target image
+    print('searching for index %d'%(i))
+    i_feature = feature[i,:]
+    norm_best = 1e5
+    j_best = 0
+    
+    for j in range(len(feature)):
+        if label_vec[j] != label_vec[i]:
+            j_feature = feature[j,:]
+            # compute L2 norm 
+            norm_temp = np.linalg.norm(i_feature-j_feature)
+            #print(norm_temp)
+            if norm_temp < norm_best:
+                j_best = j # update best index so fat 
+                norm_best = norm_temp # update smallest norm so far
+    j_idx_dict[i] = j_best
+
+j_label_dict = np.zeros((10000,1))
+for i in range(len(j_idx_dict)):
+    j_label_idx = int(j_idx_dict[i].item()) # get index of current j
+    j_label_dict[i] = label_vec[j_label_idx] # get the label of current j
+    print(i)
+
+np.savetxt("mnist_j_idx_dict_1e4.csv", j_idx_dict, delimiter=",")
+np.savetxt("mnist_j_label_dict_1e4.csv", j_label_dict, delimiter=",")
+
+
+# prepare data for GAN training
+#train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+#test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
 
 
-#for i in range(len(train_data))
 
 
-
-
-#img_0 = X_train[np.where(y_train == 0)[0]]
-#img_1 = X_train[np.where(y_train == 1)[0]]
-#img_2 = X_train[np.where(y_train == 2)[0]]
-#img_3 = X_train[np.where(y_train == 3)[0]]
-#img_4 = X_train[np.where(y_train == 4)[0]]
-#img_5 = X_train[np.where(y_train == 5)[0]]
-#img_6 = X_train[np.where(y_train == 6)[0]]
-#img_7 = X_train[np.where(y_train == 7)[0]]
-#img_8 = X_train[np.where(y_train == 8)[0]]
-#img_9 = X_train[np.where(y_train == 9)[0]]
-#
-## compute mean image for each class
-#img_0_mean = np.mean(img_0,0)
-#img_1_mean = np.mean(img_1,0)
-#img_2_mean = np.mean(img_2,0)
-#img_3_mean = np.mean(img_3,0)
-#img_4_mean = np.mean(img_4,0)
-#img_5_mean = np.mean(img_5,0)
-#img_6_mean = np.mean(img_6,0)
-#img_7_mean = np.mean(img_7,0)
-#img_8_mean = np.mean(img_8,0)
-#img_9_mean = np.mean(img_9,0)
-#img_mean = np.array([img_0_mean,img_1_mean,img_2_mean,img_3_mean,img_4_mean,img_5_mean,img_6_mean,img_7_mean,img_8_mean,img_9_mean])
-#
 ## initialise distance matrix
 #dist_mat = np.zeros((10,10))
 #for i in range(10):

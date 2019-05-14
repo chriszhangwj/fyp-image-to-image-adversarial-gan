@@ -166,7 +166,7 @@ def train_semitargeted(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta
                     for k in range(10000-idx_begin):
                         y_target.append(j_label_dict[idx_current+k])
                     #print(10000-idx_begin)
-                    print(len(y_target))
+                    #print(len(y_target))
                     y_pred = y_pred.cpu()
                     y_pred = y_pred.data.numpy()
                     temp = y_pred[:10000-idx_begin,:]
@@ -199,14 +199,14 @@ def train_semitargeted(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta
                 loss_d.backward(torch.ones_like(loss_d))
                 optimizer_D.step()
             n += y_target.size(0)
-    print(n)  
+    #print(n)  
     return acc/n 
 
 gpu = True
 device = 'cuda'
 model_name = 'Model_C'
 lr = 0.001
-epochs = 50
+epochs = 100
     
 D = Discriminator()
 G = Generator()
@@ -225,8 +225,8 @@ if gpu:
 optimizer_G = optim.Adam(G.parameters(), lr=lr)
 optimizer_D = optim.Adam(D.parameters(), lr=lr)
 
-scheduler_G = StepLR(optimizer_G, step_size=5, gamma=0.1)
-scheduler_D = StepLR(optimizer_D, step_size=5, gamma=0.1)
+scheduler_G = StepLR(optimizer_G, step_size=30, gamma=0.1) # original step_size=5
+scheduler_D = StepLR(optimizer_D, step_size=30, gamma=0.1)
 
 criterion_adv = CWLoss # loss for fooling target model
 criterion_gan = nn.MSELoss() # for gan loss
@@ -236,6 +236,10 @@ num_steps = 3 # number of generator updates for 1 discriminator update
 thres = c = 0.3 # perturbation bound, used in loss_hinge
 
 device = 'cuda' if gpu else 'cpu'
+
+acc_train_epoch = np.array([]).reshape(0,1)
+acc_test_epoch = np.array([]).reshape(0,1)
+
 
 for epoch in range(epochs):
     acc_train = train_semitargeted(G, D, t, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
@@ -257,3 +261,17 @@ for epoch in range(epochs):
                 "acc_test": acc_test,
                 "optimizer": optimizer_G.state_dict()
                 }, "saved/target_models/semitargeted/generators/bound_%.1f/%s_%s.pth.tar"%(thres, model_name, 'semitargeted'))
+
+    acc_train_epoch=np.vstack([acc_train_epoch, acc_train])
+    acc_test_epoch=np.vstack([acc_test_epoch, acc_test])
+    
+fig, ax = plt.subplots()    
+ax.plot(acc_train_epoch, label='acc_train')
+ax.plot(acc_test_epoch, label='acc_test')
+ax.set(xlabel='Steps (Number of batches)', ylabel='Success rate',title='Attack success rate')
+ax.set_axisbelow(True)
+ax.minorticks_on()
+ax.grid(which='major',linestyle='-')
+ax.grid(which='minor',linestyle=':')
+plt.legend(loc='upper right')
+plt.show()

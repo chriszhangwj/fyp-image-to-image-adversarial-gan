@@ -6,17 +6,19 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import StepLR
 
 import target_models
+import torch.optim as optim
 from generators import Generator_MNIST as Generator
 from discriminators import Discriminator_MNIST as Discriminator
 from prepare_dataset import load_dataset
-from train_function import train
+from train_function import train, train_plot
 from test_function import test
 
 import cv2
 import numpy as np
 import os
 import argparse
-
+import matplotlib
+import matplotlib.pyplot as plt
 
 def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
     # inputs to the softmax function are called logits.
@@ -102,10 +104,21 @@ if __name__ == '__main__':
     thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
+    loss_adv_epoch = np.array([]).reshape(0,1)
+    loss_gan_epoch = np.array([]).reshape(0,1)
+    loss_hinge_epoch = np.array([]).reshape(0,1)
+    loss_g_epoch = np.array([]).reshape(0,1)
+    loss_d_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train = train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist = train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
+        
+        loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
+        loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])
+        loss_hinge_epoch=np.vstack([loss_hinge_epoch, loss_hinge_hist])
+        loss_g_epoch=np.vstack([loss_g_epoch, loss_g_hist])
+        loss_d_epoch=np.vstack([loss_d_epoch, loss_d_hist])
 
         scheduler_G.step()
         scheduler_D.step()
@@ -125,3 +138,32 @@ if __name__ == '__main__':
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
                     }, "saved/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
+    
+    # plot training curve
+    fig, ax = plt.subplots()    
+    ax.plot(loss_adv_epoch, label='loss_adv')
+    ax.plot(loss_gan_epoch, label='loss_gan')
+    ax.plot(loss_hinge_epoch, label='loss_pert')
+    ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major',linestyle='-')
+    ax.grid(which='minor',linestyle=':')
+    plt.ylim((0,30))
+    plt.legend(loc='upper right')
+    plt.show()
+    
+    fig, ax = plt.subplots()    
+    ax.plot(loss_gan_epoch, label='loss_gan')
+    ax.plot(loss_d_epoch, label='loss_d')
+    ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major',linestyle='-')
+    ax.grid(which='minor',linestyle=':')
+    plt.ylim((0,2))
+    plt.legend(loc='upper right')
+    plt.show()
+    
+    
+    

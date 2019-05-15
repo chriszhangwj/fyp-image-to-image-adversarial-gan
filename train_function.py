@@ -41,13 +41,11 @@ def train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alp
 
         # GAN Generator loss
         loss_gan = criterion_gan(D(img_fake), valid)
-        
         # perturbation loss
         loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
-        
         # total generator loss
         loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
-        # alternative loss functions as described in paper
+        # alternative loss functions
         #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
         #loss_g = loss_hinge + loss_adv # pert loss + adv loss
         
@@ -59,26 +57,11 @@ def train(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alp
             # Train the Discriminator
             loss_real = criterion_gan(D(img_real), valid)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
-            loss_d = 0.5*loss_real + 0.5*loss_fake
+            loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 
         n += img.size(0)
-        
-        loss_adv=loss_adv.cpu()
-        loss_gan=loss_gan.cpu()
-        loss_hinge=loss_hinge.cpu()
-        np.append(loss_adv_hist,loss_adv.detach().numpy())
-        np.append(loss_gan_hist,loss_gan.detach().numpy())
-        np.append(loss_hinge_hist,loss_hinge.detach().numpy())
-    
-    fig, ax = plt.subplots()    
-    ax.plot(loss_adv_hist)
-    ax.set(xlabel='time (s)', ylabel='voltage (mV)',
-    title='About as simple as it gets, folks')
-    ax.grid()
-    plt.show()
-
         #print("Epoch [%d/%d]: [%d/%d], D Loss: %1.4f, G Loss: %3.4f [H %3.4f, A %3.4f], Acc: %.4f"
         #    %(epoch+1, epochs, i, len(train_loader), loss_d.mean().item(), loss_g.mean().item(), loss_hinge.mean().item(), loss_adv.mean().item(), acc/n) , end="\r")
     return acc/n
@@ -211,7 +194,7 @@ def train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan
             # Train the Discriminator
             loss_real = criterion_gan(D(img_real), valid)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
-            loss_d = 0.5*loss_real + 0.5*loss_fake
+            loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 
@@ -227,9 +210,76 @@ def train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan
         loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
         loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
         loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
-        #print(loss_adv_hist)
 
         #print("Epoch [%d/%d]: [%d/%d], D Loss: %1.4f, G Loss: %3.4f [H %3.4f, A %3.4f], Acc: %.4f"
         #    %(epoch+1, epochs, i, len(train_loader), loss_d.mean().item(), loss_g.mean().item(), loss_hinge.mean().item(), loss_adv.mean().item(), acc/n) , end="\r")
     return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
 
+def train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
+    # only consider untargeted
+    n = 0
+    acc = 0 # attack success rate
+    num_steps = num_steps
+
+    G.train()
+    D.train()
+    
+    loss_adv_hist = np.array([]).reshape(0,1)
+    loss_gan_hist = np.array([]).reshape(0,1)
+    loss_hinge_hist = np.array([]).reshape(0,1)
+    loss_g_hist = np.array([]).reshape(0,1)
+    loss_d_hist = np.array([]).reshape(0,1)
+    
+    for i, (img, label) in enumerate(train_loader):
+        valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
+        fake = Variable(torch.FloatTensor(img.size(0), 1).fill_(0.0).to(device), requires_grad=False)
+
+        img_real = Variable(img.to(device))
+
+        optimizer_G.zero_grad()
+
+        img_fake = torch.clamp(G(img_real), 0, 1) # clip to [0, 1]
+        pert = img_fake - img_real 
+        y_pred = f(img_fake)
+        
+        # Train the Generator
+        # adversarial loss
+        y_true = Variable(label.to(device))
+        loss_adv = criterion_adv(y_pred, y_true, is_targeted=False)
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
+
+        # GAN Generator loss
+        loss_gan = criterion_gan(D(img_fake), valid)
+        # perturbation loss
+        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
+        # total generator loss
+        loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
+        # alternative loss functions
+        #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
+        #loss_g = loss_hinge + loss_adv # pert loss + adv loss
+        
+        loss_g.backward(torch.ones_like(loss_g))
+        optimizer_G.step()
+
+        optimizer_D.zero_grad()
+        if i % num_steps == 0:
+            # Train the Discriminator
+            loss_real = criterion_gan(D(img_real), valid)
+            loss_fake = criterion_gan(D(img_fake.detach()), fake)
+            loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
+            loss_d.backward(torch.ones_like(loss_d))
+            optimizer_D.step()
+
+        n += img.size(0)
+        
+        loss_adv=loss_adv.cpu()
+        loss_gan=loss_gan.cpu()
+        loss_hinge=loss_hinge.cpu()
+        loss_g = loss_g.cpu()
+        loss_d = loss_d.cpu()
+        loss_adv_hist=np.vstack([loss_adv_hist, loss_adv.detach().numpy()])
+        loss_gan_hist=np.vstack([loss_gan_hist, loss_gan.detach().numpy()])
+        loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
+        loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
+        loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
+    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist

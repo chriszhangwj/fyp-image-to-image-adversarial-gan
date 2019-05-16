@@ -103,14 +103,23 @@ def test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
         ssim += pytorch_ssim.ssim(img_real, img_fake).item()
         n += img.size(0)
       
+    img_real = img_real.cpu()
+    img_real = img_real.data.squeeze().numpy()
+    plt.figure(figsize=(3,3))
+    plt.imshow(img_real[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    
     img_fake = img_fake.cpu()
     adversarial_img = img_fake.data.squeeze().numpy()
     label = label.cpu()
     label = label.data.squeeze().numpy()
     plt.figure(figsize=(3,3))
-    plt.imshow(adversarial_img[0,:,:], cmap = 'gray')
-    plt.title('Real image: digit %d'%(label[0]))
+    plt.imshow(adversarial_img[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
+
 #        if verbose:
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
     return acc/n, ssim/n # returns attach success rate

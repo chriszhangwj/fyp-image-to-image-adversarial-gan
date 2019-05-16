@@ -24,14 +24,9 @@ def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
     # inputs to the softmax function are called logits.
     # https://arxiv.org/pdf/1608.04644.pdf
     target_one_hot = torch.eye(num_classes).type(logits.type())[target.long()] # one hot vector for the target label
-    #print(logits.size())
-    # workaround here.
-    # subtract large value from target class to find other max value
-    # https://github.com/carlini/nn_robust_attacks/blob/master/l2_attack.py
     real = torch.sum(target_one_hot*logits, 1) # element-wise multiplication by *
     other = torch.max((1-target_one_hot)*logits - (target_one_hot*10000), 1)[0]
     kappa = torch.zeros_like(other).fill_(kappa)
-
     if is_targeted:
         return torch.sum(torch.max(other-real, kappa))
     return torch.sum(torch.max(real-other, kappa))
@@ -58,18 +53,16 @@ if __name__ == '__main__':
     thres = args.thres # thres is hard-coded below, change it
     gpu = args.gpu
 
-
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 100
-    #epochs=1
+    epochs = 1
 
     print('Training AdvGAN (Untargeted)')
 
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     D = Discriminator()
     G = Generator()
@@ -94,8 +87,8 @@ if __name__ == '__main__':
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     alpha = 1 # gan loss multiplication factor
-    beta = 10 # for hinge loss
-    num_steps = 3 # number of generator updates for 1 discriminator update
+    beta = 5 # for hinge loss
+    num_steps = 500 # number of generator updates for 1 discriminator update
     thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
@@ -106,8 +99,9 @@ if __name__ == '__main__':
     loss_d_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist = train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, test = train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
+        print(test.shape)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])

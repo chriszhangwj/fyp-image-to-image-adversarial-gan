@@ -56,12 +56,12 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 1
+    epochs = 100
 
     print('Training AdvGAN (Untargeted)')
 
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     D = Discriminator()
@@ -99,9 +99,8 @@ if __name__ == '__main__':
     loss_d_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, test = train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist= train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
-        print(test.shape)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])

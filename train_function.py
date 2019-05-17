@@ -231,25 +231,23 @@ def train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, tr
     loss_hinge_hist = np.array([]).reshape(0,1)
     loss_g_hist = np.array([]).reshape(0,1)
     loss_d_hist = np.array([]).reshape(0,1)
-    
 
-    noise = perlin(size = size, period = 60, octave = 1, freq_sine = 36)
-    noise = noise - np.mean(noise)
-    payload = (np.sign(noise.reshape(28, 28, 1)) + 1) / 2
-    payload = payload.squeeze()
-    payload = (payload-0.5)*2    
-
+    M = 50
+    noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
+    noise = (noise - 0.5)*2 # [-1,1]
+    #payload = (np.sign(noise.reshape(28, 28, 1)) + 1) / 2 # [-1,1] binary # [0,2] binary # [0,1] binary
+    noise = M * noise.squeeze()
+    #payload = M * (payload-0.5)*2 # [-M,M] binary
     
     for i, (img, label) in enumerate(train_loader):
-        print(img.shape[3])
         valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
         fake = Variable(torch.FloatTensor(img.size(0), 1).fill_(0.0).to(device), requires_grad=False)
-        
-        img_real = Variable(img.to(device))
-        noise = np.tile(payload,(img.shape[3],1,1,1))
-        noise = torch.from_numpy(noise)
-        noise = Variable(noise.to(device))
-        img_real = torch.clamp(img_real + noise, 
+        img = img.cpu()
+        img = img.detach().numpy()
+        img_real = 255 * img
+        img_noise = np.tile(noise,(img_real.shape[0],1,1,1))
+        img_real = img_real + img_noise
+        img_real = Variable(torch.from_numpy(img_real).to(device))
 
         optimizer_G.zero_grad()
 
@@ -286,7 +284,7 @@ def train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, tr
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 
-        n += img.size(0)
+        n += img_real.size(0)
         
         loss_adv=loss_adv.cpu()
         loss_gan=loss_gan.cpu()
@@ -298,34 +296,48 @@ def train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, tr
         loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
         loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
         loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
+        
+    img = img.squeeze()
+    plt.figure(figsize=(2,2))
+    plt.imshow(img[1,:,:], cmap = 'gray')
+    plt.title('Real image without noise: digit %d'%(label[1]))
+    plt.show()    
+    
+    img_real = img_real.cpu()
+    img_real = img_real.data.squeeze().numpy()
+    plt.figure(figsize=(2,2))
+    plt.imshow(img_real[1,:,:], cmap = 'gray')
+    plt.title('Real image with noise: digit %d'%(label[1]))
+    plt.show()    
+            
     return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
 
-def train_baseline_BEGAN(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
-    # only consider untargeted
-    n = 0
-    acc = 0 # attack success rate
-    num_steps = num_steps
-
-    G.train()
-    D.train()
-    
-    loss_adv_hist = np.array([]).reshape(0,1)
-    loss_gan_hist = np.array([]).reshape(0,1)
-    loss_hinge_hist = np.array([]).reshape(0,1)
-    loss_g_hist = np.array([]).reshape(0,1)
-    loss_d_hist = np.array([]).reshape(0,1)
-    
-    for i, (img, label) in enumerate(train_loader):
-        valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
-        fake = Variable(torch.FloatTensor(img.size(0), 1).fill_(0.0).to(device), requires_grad=False)
-
-        img_real = Variable(img.to(device))
-
-        optimizer_G.zero_grad()
-
-        img_fake = torch.clamp(G(img_real), 0, 1) # clip to [0, 1]
-        pert = img_fake - img_real 
-        y_pred = f(img_fake)
+#def train_baseline_BEGAN(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
+#    # only consider untargeted
+#    n = 0
+#    acc = 0 # attack success rate
+#    num_steps = num_steps
+#
+#    G.train()
+#    D.train()
+#    
+#    loss_adv_hist = np.array([]).reshape(0,1)
+#    loss_gan_hist = np.array([]).reshape(0,1)
+#    loss_hinge_hist = np.array([]).reshape(0,1)
+#    loss_g_hist = np.array([]).reshape(0,1)
+#    loss_d_hist = np.array([]).reshape(0,1)
+#    
+#    for i, (img, label) in enumerate(train_loader):
+#        valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
+#        fake = Variable(torch.FloatTensor(img.size(0), 1).fill_(0.0).to(device), requires_grad=False)
+#
+#        img_real = Variable(img.to(device))
+#
+#        optimizer_G.zero_grad()
+#
+#        img_fake = torch.clamp(G(img_real), 0, 1) # clip to [0, 1]
+#        pert = img_fake - img_real 
+#        y_pred = f(img_fake)
         
 #        
 #        # Train the Discriminiator
@@ -344,37 +356,37 @@ def train_baseline_BEGAN(G, D, f, thres, criterion_adv, criterion_gan, alpha, be
         
         # Train the Generator
         # adversarial loss
-        y_true = Variable(label.to(device))
-        loss_adv = criterion_adv(y_pred, y_true, is_targeted=False)
-        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
-
-        # GAN Generator loss
-        loss_gan = criterion_gan(D(img_fake), valid)
-        # perturbation loss
-        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
-        # total generator loss
-        loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
-        # alternative loss functions
-        #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
-        #loss_g = loss_hinge + loss_adv # pert loss + adv loss
-        
-        loss_g.backward(torch.ones_like(loss_g))
-        optimizer_G.step()
-
-        optimizer_D.zero_grad()
-
-
-        n += img.size(0)
-        
-        loss_adv=loss_adv.cpu()
-        loss_gan=loss_gan.cpu()
-        loss_hinge=loss_hinge.cpu()
-        loss_g = loss_g.cpu()
-        loss_d = loss_d.cpu()
-        loss_adv_hist=np.vstack([loss_adv_hist, loss_adv.detach().numpy()])
-        loss_gan_hist=np.vstack([loss_gan_hist, loss_gan.detach().numpy()])
-        loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
-        loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
-        loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
-    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
+#        y_true = Variable(label.to(device))
+#        loss_adv = criterion_adv(y_pred, y_true, is_targeted=False)
+#        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
+#
+#        # GAN Generator loss
+#        loss_gan = criterion_gan(D(img_fake), valid)
+#        # perturbation loss
+#        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
+#        # total generator loss
+#        loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
+#        # alternative loss functions
+#        #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
+#        #loss_g = loss_hinge + loss_adv # pert loss + adv loss
+#        
+#        loss_g.backward(torch.ones_like(loss_g))
+#        optimizer_G.step()
+#
+#        optimizer_D.zero_grad()
+#
+#
+#        n += img.size(0)
+#        
+#        loss_adv=loss_adv.cpu()
+#        loss_gan=loss_gan.cpu()
+#        loss_hinge=loss_hinge.cpu()
+#        loss_g = loss_g.cpu()
+#        loss_d = loss_d.cpu()
+#        loss_adv_hist=np.vstack([loss_adv_hist, loss_adv.detach().numpy()])
+#        loss_gan_hist=np.vstack([loss_gan_hist, loss_gan.detach().numpy()])
+#        loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
+#        loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
+#        loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
+#    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
 

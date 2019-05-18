@@ -31,6 +31,30 @@ class Discriminator_MNIST(nn.Module):
 		x = self.fc(x)
 
 		return x
+    
+class AC_MNIST(nn.Module): # use LeNet-5 used as auxiliary classifier
+    def __init__(self, in_channels, num_classes):
+        super(AC_MNIST, self).__init__()
+        self.convnet = nn.Sequential(
+            nn.Conv2d(1, 3, kernel_size=5), # 24
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2), # 12
+            nn.Conv2d(3, 6, kernel_size=5), # 8
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2), # 4
+        )   
+        self.fc = nn.Sequential(
+            nn.Linear(4*4*6, 84),
+            nn.ReLU(),
+            nn.Linear(84, 10),
+        )
+        self.softmax = nn.Softmax()
+
+    def forward(self, x):
+        out = self.convnet(x)
+        out = out.view(x.size(0), -1)
+        out = self.fc(out)
+        return self.softmax(out)
 
 
 if __name__ == '__main__':

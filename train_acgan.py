@@ -89,7 +89,6 @@ if __name__ == '__main__':
     alpha = 5 # gan loss multiplication factor
     beta = 10 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
-    M = 50 # magnitude of perlin noise on a scale of 255
     #thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
@@ -100,8 +99,8 @@ if __name__ == '__main__':
     loss_d_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist= train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test, _ = test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist= train_acgan(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_test, _ = test_acgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])

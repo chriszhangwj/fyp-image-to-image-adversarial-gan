@@ -126,12 +126,11 @@ def test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
     return acc/n, ssim/n # returns attach success rate
 
-def test_perlin(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
+def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     n = 0
     acc = 0
     ssim = 0
     
-    M= 50
     noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
     noise = (noise - 0.5)*2 # [-1,1]
     #payload = (np.sign(noise.reshape(28, 28, 1)) + 1) / 2 # [-1,1] binary # [0,2] binary # [0,1] binary

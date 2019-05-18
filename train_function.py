@@ -265,7 +265,8 @@ def train_baseline(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, tr
         if i % num_steps == 0:
             print('update D')
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid)
+            #loss_real = criterion_gan(D(img_real), valid)
+            loss_real = criterion_gan(D(img_real), valid*0.9) #label-smoothing
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
             loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))
@@ -316,9 +317,7 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
     noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
     noise = (noise - 0.5)*2 # [-1,1]
-    #payload = (np.sign(noise.reshape(28, 28, 1)) + 1) / 2 # [-1,1] binary # [0,2] binary # [0,1] binary
     noise = M * noise.squeeze()
-    #payload = M * (payload-0.5)*2 # [-M,M] binary
     
     for i, (img, label) in enumerate(train_loader):
         valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
@@ -360,7 +359,8 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
         if i % num_steps == 0:
             print('update D')
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid)
+            # loss_real = criterion_gan(D(img_real), valid)
+            loss_real = criterion_gan(D(img_real), valid*0.5)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
             loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))
@@ -380,14 +380,14 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
         loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
         
     img = img.squeeze()
-    plt.figure(figsize=(2,2))
+    plt.figure(figsize=(1.5,1.5))
     plt.imshow(img[1,:,:], cmap = 'gray')
     plt.title('Real image without noise: digit %d'%(label[1]))
     plt.show()    
     
     img_real = img_real.cpu()
     img_real = img_real.data.squeeze().numpy()
-    plt.figure(figsize=(2,2))
+    plt.figure(figsize=(1.5,1.5))
     plt.imshow(img_real[1,:,:], cmap = 'gray')
     plt.title('Real image with noise: digit %d'%(label[1]))
     plt.show()    
@@ -396,20 +396,20 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
 
 
-def train_baseline_ACGAN(G, D, f, A, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
-    # only consider untargeted
+def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
     n = 0
     acc = 0 # attack success rate
     num_steps = num_steps
-
     G.train()
     D.train()
-    
     loss_adv_hist = np.array([]).reshape(0,1)
     loss_gan_hist = np.array([]).reshape(0,1)
     loss_hinge_hist = np.array([]).reshape(0,1)
     loss_g_hist = np.array([]).reshape(0,1)
     loss_d_hist = np.array([]).reshape(0,1)
+    loss_real_hist = np.array([]).reshape(0,1)
+    loss_fake_hist = np.array([]).reshape(0,1)
+    loss_aux_hist = np.array([]).reshape(0,1)
     
     for i, (img, label) in enumerate(train_loader):
         valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
@@ -420,7 +420,6 @@ def train_baseline_ACGAN(G, D, f, A, thres, criterion_adv, criterion_gan, alpha,
         img_fake = torch.clamp(G(img_real), 0, 1) # clip to [0, 1]
         pert = img_fake - img_real # pert is for the entire batch
         y_pred = f(img_fake)
-        
         # Train the Generator
         # adversarial loss
         y_true = Variable(label.to(device))
@@ -428,26 +427,29 @@ def train_baseline_ACGAN(G, D, f, A, thres, criterion_adv, criterion_gan, alpha,
         acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
 
         # GAN Generator loss
-        loss_gan = criterion_gan(D(img_fake), valid)
+        x1_fake, _ = D(img_fake)
+        loss_gan = criterion_gan(x1_fake, valid)
         # perturbation loss
         loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
-        loss_ac = 
         # total generator loss
         loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
-        # alternative loss functions
-        #loss_g =  torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) + loss_adv # pert norm + adv loss
-        #loss_g = loss_hinge + loss_adv # pert loss + adv loss
-        
+   
         loss_g.backward(torch.ones_like(loss_g))
         optimizer_G.step()
-
         optimizer_D.zero_grad()
+        
         if i % num_steps == 0:
             print('update D')
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid)
-            loss_fake = criterion_gan(D(img_fake.detach()), fake)
-            loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
+            #loss_real = criterion_gan(D(img_real), valid*0.9) #label-smoothing
+            #loss_real = criterion_gan(D(img_real), valid*0.5)
+            #loss_fake = criterion_gan(D(img_fake.detach()), fake)
+            x1_real, _ = D(img_real)
+            x1_fake, x2_fake = D(img_fake.detach())
+            loss_real = criterion_gan(x1_real, valid*0.5)
+            loss_fake = criterion_gan(x1_fake, fake)
+            loss_aux = criterion_aux(x2_fake, y_true)
+            loss_d = 0.5*loss_real + 0.5*loss_fake + loss_aux# # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 
@@ -458,28 +460,20 @@ def train_baseline_ACGAN(G, D, f, A, thres, criterion_adv, criterion_gan, alpha,
         loss_hinge=loss_hinge.cpu()
         loss_g = loss_g.cpu()
         loss_d = loss_d.cpu()
+        loss_real = loss_real.cpu()
+        loss_fake = loss_fake.cpu()
+        loss_aux = loss_aux.cpu()
         loss_adv_hist=np.vstack([loss_adv_hist, loss_adv.detach().numpy()])
         loss_gan_hist=np.vstack([loss_gan_hist, loss_gan.detach().numpy()])
         loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
         loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
         loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
         
-    img = img.squeeze()
-    plt.figure(figsize=(2,2))
-    plt.imshow(img[1,:,:], cmap = 'gray')
-    plt.title('Real image without noise: digit %d'%(label[1]))
-    plt.show()    
-    
-    img_real = img_real.cpu()
-    img_real = img_real.data.squeeze().numpy()
-    plt.figure(figsize=(2,2))
-    plt.imshow(img_real[1,:,:], cmap = 'gray')
-    plt.title('Real image with noise: digit %d'%(label[1]))
-    plt.show()    
+        loss_real_hist=np.vstack([loss_real_hist, loss_real.detach().numpy()])
+        loss_fake_hist=np.vstack([loss_fake_hist, loss_fake.detach().numpy()])
+        loss_aux_hist=np.vstack([loss_aux_hist, loss_aux.detach().numpy()])
             
-    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
-
-
+    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist
 
 #def train_baseline_BEGAN(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
 #    # only consider untargeted

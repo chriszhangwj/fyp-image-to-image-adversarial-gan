@@ -8,9 +8,9 @@ from torch.optim.lr_scheduler import StepLR
 import target_models
 import torch.optim as optim
 from generators import Generator_MNIST as Generator
-from discriminators import Discriminator_MNIST as Discriminator
+from discriminators import Discriminator_AC as Discriminator
 from prepare_dataset import load_dataset
-from train_function import train_baseline, train_perlin
+from train_function import train_baseline_ACGAN
 from test_function import test_baseline, test_perlin
 
 import cv2
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 60
+    epochs = 10
 
     print('Training AdvGAN (Untargeted)')
 
@@ -86,6 +86,7 @@ if __name__ == '__main__':
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
+    criterion_aux = nn.NLLLoss() # negative log likelihood loss for aux classifier
     alpha = 5 # gan loss multiplication factor
     beta = 10 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
@@ -97,16 +98,22 @@ if __name__ == '__main__':
     loss_hinge_epoch = np.array([]).reshape(0,1)
     loss_g_epoch = np.array([]).reshape(0,1)
     loss_d_epoch = np.array([]).reshape(0,1)
+    loss_real_epoch = np.array([]).reshape(0,1)
+    loss_fake_epoch = np.array([]).reshape(0,1)
+    loss_aux_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist= train_acgan(G, D, f, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test, _ = test_acgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist = train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_test, _ = test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])
         loss_hinge_epoch=np.vstack([loss_hinge_epoch, loss_hinge_hist])
         loss_g_epoch=np.vstack([loss_g_epoch, loss_g_hist])
         loss_d_epoch=np.vstack([loss_d_epoch, loss_d_hist])
+        loss_real_epoch=np.vstack([loss_real_epoch, loss_real_hist])
+        loss_fake_epoch=np.vstack([loss_fake_epoch, loss_fake_hist])
+        loss_aux_epoch=np.vstack([loss_aux_epoch, loss_aux_hist])
 
         scheduler_G.step()
         scheduler_D.step()
@@ -151,5 +158,17 @@ if __name__ == '__main__':
     plt.legend(loc='upper right')
     plt.show()
     
+    fig, ax = plt.subplots()    
+    ax.plot(loss_real_epoch, label='loss_real')
+    ax.plot(loss_fake_epoch, label='loss_fake')
+    ax.plot(loss_aux_epoch, label='loss_aux')
+    ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major',linestyle='-')
+    ax.grid(which='minor',linestyle=':')
+    plt.ylim((0,2))
+    plt.legend(loc='upper right')
+    plt.show()
     
     

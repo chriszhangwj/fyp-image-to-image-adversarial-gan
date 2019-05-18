@@ -86,6 +86,7 @@ if __name__ == '__main__':
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
+    criterion_dis = nn.BCELoss()
     criterion_aux = nn.NLLLoss() # negative log likelihood loss for aux classifier
     alpha = 5 # gan loss multiplication factor
     beta = 10 # for hinge loss
@@ -103,7 +104,7 @@ if __name__ == '__main__':
     loss_aux_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist = train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist = train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_dis, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test_baseline(G, f, thres, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
@@ -167,7 +168,7 @@ if __name__ == '__main__':
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,2))
+    #plt.ylim((0,2))
     plt.legend(loc='upper right')
     plt.show()
     

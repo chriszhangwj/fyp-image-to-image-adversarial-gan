@@ -396,7 +396,7 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
 
 
-def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
+def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_dis, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
     n = 0
     acc = 0 # attack success rate
     num_steps = num_steps
@@ -446,8 +446,8 @@ def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion
             #loss_fake = criterion_gan(D(img_fake.detach()), fake)
             x1_real, _ = D(img_real)
             x1_fake, x2_fake = D(img_fake.detach())
-            loss_real = criterion_gan(x1_real, valid*0.5)
-            loss_fake = criterion_gan(x1_fake, fake)
+            loss_real = criterion_dis(x1_real, valid*0.5)
+            loss_fake = criterion_dis(x1_fake, fake)
             loss_aux = criterion_aux(x2_fake, y_true)
             loss_d = 0.5*loss_real + 0.5*loss_fake + loss_aux# # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))

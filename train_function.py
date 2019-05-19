@@ -345,7 +345,7 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
         # GAN Generator loss
         loss_gan = criterion_gan(D(img_fake), valid) # loss is low when the discriminator think it's valid; loss is high when discriminator tells it's fake
         # perturbation loss
-        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1)))
+        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=1, dim=1)))
         # total generator loss
         loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
         # alternative loss functions
@@ -432,7 +432,7 @@ def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion
         # perturbation loss
         loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
         # total generator loss
-        loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
+        loss_g = 4 * loss_adv + alpha*loss_gan + beta*loss_hinge
    
         loss_g.backward(torch.ones_like(loss_g))
         optimizer_G.step()
@@ -448,8 +448,10 @@ def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion
             x1_fake, x2_fake = D(img_fake.detach())
             loss_real = criterion_dis(x1_real, valid*0.5)
             loss_fake = criterion_dis(x1_fake, fake)
+            print(x2_fake.size())
+            print(y_true.size())
             loss_aux = criterion_aux(x2_fake, y_true)
-            loss_d = 0.5*loss_real + 0.5*loss_fake + loss_aux# # as defined in LSGAN paper, method 2
+            loss_d = loss_real + loss_fake + loss_aux# # as defined in LSGAN paper, method 2
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 

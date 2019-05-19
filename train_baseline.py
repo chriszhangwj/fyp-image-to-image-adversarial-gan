@@ -86,10 +86,10 @@ if __name__ == '__main__':
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
-    alpha = 5 # gan loss multiplication factor
-    beta = 10 # for hinge loss
+    alpha = 1 # gan loss multiplication factor
+    beta = 2 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
-    M = 50 # magnitude of perlin noise on a scale of 255
+    M = 10 # magnitude of perlin noise on a scale of 255
     #thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'

@@ -65,6 +65,7 @@ class Model_C(nn.Module):
         self.maxpool2 = nn.MaxPool2d(kernel_size=2)
         self.fc1 = nn.Linear(7*7*64, 200)
         self.fc2 = nn.Linear(200, self.num_classes)
+        self.dropout = nn.Dropout(0.5)
         #self.softmax = nn.Softmax()
 
     def forward(self, x):
@@ -77,6 +78,7 @@ class Model_C(nn.Module):
         x = x.view(x.size(0), -1)
         o = self.fc1(x)
         x = F.relu(o)
+        x = self.dropout(x)
         #x = F.relu(self.fc1(x))
         x = self.fc2(x)
         #x = x / self.T

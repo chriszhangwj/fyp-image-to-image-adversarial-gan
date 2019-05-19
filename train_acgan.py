@@ -56,7 +56,7 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 10
+    epochs = 60
 
     print('Training AdvGAN (Untargeted)')
 
@@ -155,7 +155,6 @@ if __name__ == '__main__':
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,2))
     plt.legend(loc='upper right')
     plt.show()
     

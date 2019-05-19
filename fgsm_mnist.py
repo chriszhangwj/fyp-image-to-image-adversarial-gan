@@ -67,11 +67,11 @@ f.cuda()
 
 device = 'cuda' if gpu else 'cpu'
 criterion = nn.CrossEntropyLoss()
-eps=0.1
+eps=0.7
 train_data, test_data, in_channels, num_classes = load_dataset('mnist')
-#test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
-#acc_test = test_ce(f, eps, criterion, test_loader, device)
-#print('Test Acc: %.5f'%(acc_test))
+test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
+acc_test = test_ce(f, eps, criterion, test_loader, device)
+print('Test Acc: %.5f'%(acc_test))
 
 orig = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 #orig = cv2.resize(orig, (IMG_SIZE, IMG_SIZE))

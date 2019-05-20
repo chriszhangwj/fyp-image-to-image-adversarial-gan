@@ -56,7 +56,7 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 60
+    epochs = 40
 
     print('Training AdvGAN (Untargeted)')
 
@@ -81,15 +81,15 @@ if __name__ == '__main__':
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
     optimizer_D = optim.Adam(D.parameters(), lr=lr)
 
-    scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
-    scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
+    scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.1)
+    scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.1)
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     alpha = 1 # gan loss multiplication factor
-    beta = 2 # for hinge loss
+    beta = 0.6 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
-    M = 10 # magnitude of perlin noise on a scale of 255
+    M = 0 # magnitude of perlin noise on a scale of 255
     #thres = c = 0.3 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'

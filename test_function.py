@@ -147,7 +147,7 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
         img_real = Variable(torch.from_numpy(img_real).to(device))
         
         img_fake = torch.clamp(G(img_real), 0, 1)
-        pert = img_fake - img_real
+        #pert = img_fake - img_real
 
         y_pred = f(img_fake)
 
@@ -158,7 +158,7 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
       
     img_real = img_real.cpu()
     img_real = img_real.data.squeeze().numpy()
-    plt.figure(figsize=(2,2))
+    plt.figure(figsize=(1.5,1.5))
     plt.imshow(img_real[1,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
@@ -168,8 +168,18 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     adversarial_img = img_fake.data.squeeze().numpy()
     label = label.cpu()
     label = label.data.squeeze().numpy()
-    plt.figure(figsize=(2,2))
+    plt.figure(figsize=(1.5,1.5))
     plt.imshow(adversarial_img[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(img_real[3,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
 

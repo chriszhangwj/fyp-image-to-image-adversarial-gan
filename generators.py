@@ -30,25 +30,17 @@ class ResidualBlock(torch.nn.Module):
 class UpsampleConvLayer(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, upsample=None):
         super(UpsampleConvLayer, self).__init__()
-
         self.upsample = upsample
         if upsample:
             self.upsample_layer = nn.Upsample(mode='nearest', scale_factor=upsample)
-
         padding = kernel_size // 2
-
         self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding)
 
     def forward(self, x):
-
         if self.upsample:
             x = self.upsample_layer(x)
-
         x = self.conv2d(x)
-
         return x
-
-
 
 class Generator_MNIST(nn.Module):
     def __init__(self):

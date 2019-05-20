@@ -6,24 +6,17 @@ import torch.nn.functional as F
 class ResidualBlock(torch.nn.Module):
     def __init__(self, channels):
         super(ResidualBlock, self).__init__()
-
         self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1)
         self.in1 = nn.InstanceNorm2d(channels, affine=True)
-
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1)
         self.in2 = nn.InstanceNorm2d(channels, affine=True)
-
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-
         residual = x
-
         out = self.relu(self.in1(self.conv1(x)))
         out = self.in2(self.conv2(out))
-
         out = out + residual
-
         return out
 
 
@@ -68,7 +61,7 @@ class Generator_MNIST(nn.Module):
 
 
         self.conv4 = nn.Conv2d(8, 1, kernel_size=3, stride=1, padding=1)
-        self.in6 = nn.InstanceNorm2d(8)
+        self.in6 = nn.InstanceNorm2d(1) # originally self.in6 = nn.InstanceNorm2d(8) but we think it's a mistake
 
 
     def forward(self, x):

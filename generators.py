@@ -53,12 +53,10 @@ class Generator_MNIST(nn.Module):
         self.resblock3 = ResidualBlock(32)
         self.resblock4 = ResidualBlock(32)
 
-
         self.up1 = UpsampleConvLayer(32, 16, kernel_size=3, stride=1, upsample=2)
         self.in4 = nn.InstanceNorm2d(16)
         self.up2 = UpsampleConvLayer(16, 8, kernel_size=3, stride=1, upsample=2)
         self.in5 = nn.InstanceNorm2d(8)
-
 
         self.conv4 = nn.Conv2d(8, 1, kernel_size=3, stride=1, padding=1)
         self.in6 = nn.InstanceNorm2d(1) # originally self.in6 = nn.InstanceNorm2d(8) but we think it's a mistake
@@ -69,12 +67,10 @@ class Generator_MNIST(nn.Module):
         x = F.relu(self.in1(self.conv1(x)))
         x = F.relu(self.in2(self.conv2(x)))
         x = F.relu(self.in3(self.conv3(x)))
-
         x = self.resblock1(x)
         x = self.resblock2(x)
         x = self.resblock3(x)
         x = self.resblock4(x)
-
         x = F.relu(self.in4(self.up1(x)))
         x = F.relu(self.in5(self.up2(x)))
 

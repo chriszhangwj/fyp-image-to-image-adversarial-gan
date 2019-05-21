@@ -130,6 +130,7 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     n = 0
     acc = 0
     ssim = 0
+    class_acc = np.zeros((1,10)) # count the number of success for each class
     
     noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
     noise = (noise - 0.5)*2 # [-1,1]
@@ -186,3 +187,44 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
 #        if verbose:
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
     return acc/n, ssim/n # returns attach success rate
+
+
+def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
+    n = 0
+    acc = 0
+    ssim = 0
+    class_acc = np.zeros((1,10))
+    class_num = np.zeros((1,10))
+    noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
+    noise = (noise - 0.5)*2 # [-1,1]
+    #payload = (np.sign(noise.reshape(28, 28, 1)) + 1) / 2 # [-1,1] binary # [0,2] binary # [0,1] binary
+    noise = M * noise.squeeze()
+    G.eval()
+    for i, (img, label) in enumerate(test_loader):
+        img = img.cpu()
+        img = img.detach().numpy()
+        img_real = 255 * img
+        img_noise = np.tile(noise,(img_real.shape[0],1,1,1))
+        img_real = img_real + img_noise
+        img_real = img_real/255.0
+        img_real = Variable(torch.from_numpy(img_real).to(device))
+        
+        img_fake = torch.clamp(G(img_real), 0, 1)
+        #pert = img_fake - img_real
+
+        y_pred = f(img_fake)
+        y_true = Variable(label.to(device))
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+        class_num[0,y_true] = class_num[0,y_true]+1
+        if torch.max(y_pred, 1)[1] != y_true:
+            class_acc[0,y_true] = class_acc[0,y_true]+1
+        ssim += pytorch_ssim.ssim(img_real, img_fake).item()
+        n += img_real.size(0)
+        if i % 100 == 0:
+            print(i)
+#        if verbose:
+#            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
+    # count number of samples for each class
+    
+    acc_class = np.divide(class_acc,class_num)
+    return acc/n, ssim/n, acc_class # returns attach success rateclass_accclass_acc

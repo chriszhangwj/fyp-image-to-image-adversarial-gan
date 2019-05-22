@@ -64,6 +64,8 @@ if __name__ == '__main__':
     target = -1
     model = 'Model_C'
     img_path = 'images/0.jpg'
+    lr = 0.001 # original 0.001
+    epochs = 50
     #epochs=1
     
     is_targeted = False
@@ -93,15 +95,15 @@ if __name__ == '__main__':
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
     optimizer_D = optim.Adam(D.parameters(), lr=lr)
 
-    scheduler_G = StepLR(optimizer_G, step_size=5, gamma=0.1)
-    scheduler_D = StepLR(optimizer_D, step_size=5, gamma=0.1)
+    scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
+    scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     alpha = 1 # gan loss multiplication factor
     beta = 1 # for hinge loss
-    num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.3 # perturbation bound, used in loss_hinge
+    num_steps = 100 # number of generator updates for 1 discriminator update
+    thres = c = 0.2 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
     loss_adv_epoch = np.array([]).reshape(0,1)
@@ -137,7 +139,7 @@ if __name__ == '__main__':
                     "state_dict": G.state_dict(),
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
-                    }, "saved/%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
+                    }, "saved/advgan/advgan_%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
     
     # plot training curve
     fig, ax = plt.subplots()    

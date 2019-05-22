@@ -63,7 +63,7 @@ if __name__ == '__main__':
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-
+    
     D = Discriminator()
     G = Generator()
     f = getattr(target_models, model_name)(in_channels, num_classes)
@@ -87,10 +87,9 @@ if __name__ == '__main__':
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     alpha = 1 # gan loss multiplication factor
-    beta = 1.5 # for hinge loss
+    beta = 2 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
-    M = 20 # magnitude of perlin noise on a scale of 255
-    #thres = c = 0.3 # perturbation bound, used in loss_hinge
+    M = 0 # magnitude of perlin noise on a scale of 255
 
     device = 'cuda' if gpu else 'cpu'
     loss_adv_epoch = np.array([]).reshape(0,1)
@@ -98,9 +97,13 @@ if __name__ == '__main__':
     loss_hinge_epoch = np.array([]).reshape(0,1)
     loss_g_epoch = np.array([]).reshape(0,1)
     loss_d_epoch = np.array([]).reshape(0,1)
+    loss_real_epoch = np.array([]).reshape(0,1)
+    loss_fake_epoch = np.array([]).reshape(0,1)
+    
+    
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist= train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist = train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
@@ -108,6 +111,8 @@ if __name__ == '__main__':
         loss_hinge_epoch=np.vstack([loss_hinge_epoch, loss_hinge_hist])
         loss_g_epoch=np.vstack([loss_g_epoch, loss_g_hist])
         loss_d_epoch=np.vstack([loss_d_epoch, loss_d_hist])
+        loss_real_epoch=np.vstack([loss_real_epoch, loss_real_hist])
+        loss_fake_epoch=np.vstack([loss_fake_epoch, loss_fake_hist])
 
         scheduler_G.step()
         scheduler_D.step()
@@ -136,8 +141,8 @@ if __name__ == '__main__':
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,30))
     plt.legend(loc='upper right')
+    plt.ylim((0,20))
     plt.show()
     
     fig, ax = plt.subplots()    
@@ -148,9 +153,21 @@ if __name__ == '__main__':
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,2))
+    plt.ylim((0,5))
     plt.legend(loc='upper right')
     plt.show()
     
+        
+    fig, ax = plt.subplots()    
+    ax.plot(loss_real_epoch, label='loss_real')
+    ax.plot(loss_fake_epoch, label='loss_fake')
+    ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major',linestyle='-')
+    ax.grid(which='minor',linestyle=':')
+    plt.ylim((0,2))
+    plt.legend(loc='upper right')
+    plt.show()
     
     

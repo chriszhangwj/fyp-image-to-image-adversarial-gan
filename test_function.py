@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Variable
 import pytorch_ssim
 import matplotlib
@@ -6,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from noise import pnoise2
 from utils import perlin, colorize
+from math import log10
 
 def test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True):
     n = 0
@@ -30,6 +32,33 @@ def test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, v
             acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
         ssim += pytorch_ssim.ssim(img_real, img_fake).item()
         n += img.size(0)
+        
+    img_real = img_real.cpu()
+    img_real = img_real.data.squeeze().numpy()
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(img_real[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    
+    img_fake = img_fake.cpu()
+    adversarial_img = img_fake.data.squeeze().numpy()
+    label = label.cpu()
+    label = label.data.squeeze().numpy()
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(adversarial_img[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(img_real[3,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
 #        if verbose:
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
     return acc/n, ssim/n # returns attach success rate
@@ -193,6 +222,8 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     n = 0
     acc = 0
     ssim = 0
+    psnr = 0 # for PSNR
+    criterionMSE = nn.MSELoss().to(device) # for PSNR
     class_acc = np.zeros((1,10))
     class_num = np.zeros((1,10))
     noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
@@ -210,11 +241,13 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
         img_real = Variable(torch.from_numpy(img_real).to(device))
         
         img_fake = torch.clamp(G(img_real), 0, 1)
-        #pert = img_fake - img_real
 
         y_pred = f(img_fake)
         y_true = Variable(label.to(device))
         acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+        mse = criterionMSE(y_pred,y_true.float()) # for PSNR
+        pnsr_temp = 10 * log10(1/mse.item())
+        psnr += pnsr_temp
         class_num[0,y_true] = class_num[0,y_true]+1
         if torch.max(y_pred, 1)[1] != y_true:
             class_acc[0,y_true] = class_acc[0,y_true]+1
@@ -227,4 +260,36 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     # count number of samples for each class
     
     acc_class = np.divide(class_acc,class_num)
-    return acc/n, ssim/n, acc_class # returns attach success rateclass_accclass_acc
+    return acc/n, ssim/n, psnr/n, acc_class # returns attach success rateclass_accclass_acc
+
+def eval_advgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
+    n = 0
+    acc = 0
+    ssim = 0
+    psnr = 0 # for PSNR
+    criterionMSE = nn.MSELoss().to(device) # for PSNR
+    class_acc = np.zeros((1,10))
+    class_num = np.zeros((1,10))
+    G.eval()
+    for i, (img, label) in enumerate(test_loader):
+        img_real = Variable(img.to(device))
+
+        pert = torch.clamp(G(img_real), -thres, thres)
+        img_fake = pert + img_real
+        img_fake = img_fake.clamp(min=0, max=1)
+
+        y_pred = f(img_fake)
+        y_true = Variable(label.to(device))
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+        mse = criterionMSE(y_pred,y_true.float()) # for PSNR
+        pnsr_temp = 10 * log10(1/mse.item())
+        psnr += pnsr_temp
+        class_num[0,y_true] = class_num[0,y_true]+1
+        if torch.max(y_pred, 1)[1] != y_true:
+            class_acc[0,y_true] = class_acc[0,y_true]+1
+        ssim += pytorch_ssim.ssim(img_real, img_fake).item()
+        n += img_real.size(0)
+        if i % 100 == 0:
+            print(i)
+    acc_class = np.divide(class_acc,class_num)
+    return acc/n, ssim/n, psnr/n, acc_class # returns attach success rateclass_accclass_acc

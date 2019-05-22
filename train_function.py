@@ -194,7 +194,7 @@ def train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan
         optimizer_D.zero_grad()
         if i % num_steps == 0:
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid)
+            loss_real = criterion_gan(D(img_real), valid*0.5)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
             loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper
             loss_d.backward(torch.ones_like(loss_d))
@@ -308,18 +308,21 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
     G.train()
     D.train()
+    use_noise = False
     
     loss_adv_hist = np.array([]).reshape(0,1)
     loss_gan_hist = np.array([]).reshape(0,1)
     loss_hinge_hist = np.array([]).reshape(0,1)
     loss_g_hist = np.array([]).reshape(0,1)
     loss_d_hist = np.array([]).reshape(0,1)
+    loss_real_hist = np.array([]).reshape(0,1)
+    loss_fake_hist = np.array([]).reshape(0,1)
 
     noise = perlin(size = 28, period = 60, octave = 1, freq_sine = 36) # [0,1]
     noise = (noise - 0.5)*2 # [-1,1]
     noise = M * noise.squeeze()
     
-    for i, (img, label) in enumerate(train_loader):
+    for i, (img, label) in enumerate(train_loader): 
         valid = Variable(torch.FloatTensor(img.size(0), 1).fill_(1.0).to(device), requires_grad=False)
         fake = Variable(torch.FloatTensor(img.size(0), 1).fill_(0.0).to(device), requires_grad=False)
         img = img.cpu()
@@ -358,14 +361,24 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
         optimizer_D.zero_grad()
         if i % num_steps == 0:
             print('update D')
+#            if use_noise == True:
+#                wgn = Variable(img_real.data.new(img_real.size()).normal_(0,0.1))
+            
+            
             # Train the Discriminator
             # loss_real = criterion_gan(D(img_real), valid)
             loss_real = criterion_gan(D(img_real), valid*0.5)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
-            loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper, method 2
+            loss_d = loss_real + loss_fake 
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
-
+            loss_real = loss_real.cpu()
+            loss_real = loss_real.data.squeeze().numpy()
+            loss_fake = loss_fake.cpu()
+            loss_fake = loss_fake.data.squeeze().numpy()
+            loss_real_hist=np.vstack([loss_real_hist, loss_real])
+            loss_fake_hist=np.vstack([loss_fake_hist, loss_fake])
+            
         n += img_real.size(0)
         
         loss_adv=loss_adv.cpu()
@@ -379,20 +392,20 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
         loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
         loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
         
-    img = img.squeeze()
-    plt.figure(figsize=(1.5,1.5))
-    plt.imshow(img[1,:,:], cmap = 'gray')
-    plt.title('Real image without noise: digit %d'%(label[1]))
-    plt.show()    
-    
-    img_real = img_real.cpu()
-    img_real = img_real.data.squeeze().numpy()
-    plt.figure(figsize=(1.5,1.5))
-    plt.imshow(img_real[1,:,:], cmap = 'gray')
-    plt.title('Real image with noise: digit %d'%(label[1]))
-    plt.show()    
+#    img = img.squeeze()
+#    plt.figure(figsize=(1.5,1.5))
+#    plt.imshow(img[1,:,:], cmap = 'gray')
+#    plt.title('Real image without noise: digit %d'%(label[1]))
+#    plt.show()    
+#    
+#    img_real = img_real.cpu()
+#    img_real = img_real.data.squeeze().numpy()
+#    plt.figure(figsize=(1.5,1.5))
+#    plt.imshow(img_real[1,:,:], cmap = 'gray')
+#    plt.title('Real image with noise: digit %d'%(label[1]))
+#    plt.show()    
             
-    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist
+    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist
 
 
 

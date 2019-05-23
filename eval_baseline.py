@@ -1,10 +1,9 @@
 import torch
-import torch.nn.functional as F
 import target_models
 from generators import Generator_MNIST as Generator
 from prepare_dataset import load_dataset
 from train_function import train
-from test_function import eval_baseline
+from test_function import eval_baseline, eval_advgan
 
 import cv2
 import numpy as np
@@ -27,14 +26,10 @@ if __name__ == '__main__':
     gpu = args.gpu   
     
     # alternatively set parameters here
-    thres = 0.3
+    thres = 0.2 # make sure this is the same as the one used for training
     model_name = 'Model_C'
     digit = 2
-    target = -1
-
-    is_targeted = False
-    if target in range(0, 10):
-        is_targeted = True
+    M=0
 
     # load target model
     f = getattr(target_models, model_name)(1, 10)
@@ -43,7 +38,7 @@ if __name__ == '__main__':
     f.load_state_dict(checkpoint_f["state_dict"])
     f.eval()
 
-    # load corresponding generator
+    # --------------------------------------load baseline generator------------------------------------
     G = Generator()
     checkpoint_name_G = '%s_untargeted.pth.tar'%(model_name)
     checkpoint_path_G = os.path.join('saved', 'baseline', checkpoint_name_G)
@@ -52,8 +47,15 @@ if __name__ == '__main__':
     G.load_state_dict(checkpoint_G['state_dict'])
     G.eval()
     
+    # --------------------------------------load advgan generator--------------------------------------
+#    G = Generator()
+#    checkpoint_name_G = 'advgan_%s_untargeted.pth.tar'%(model_name)
+#    checkpoint_path_G = os.path.join('saved', 'advgan', checkpoint_name_G)
+#    checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
+#    G.load_state_dict(checkpoint_G['state_dict'])
+#    G.eval()   
+    
     # compute test attack success rate
-    M=0
     device = 'cuda' if gpu else 'cpu'
     if gpu:
         G.cuda()
@@ -61,7 +63,16 @@ if __name__ == '__main__':
     batch_size=1
     train_data, test_data, in_channels, num_classes = load_dataset('mnist')
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
-    acc_test, loss_ssim, acc_class = eval_baseline(G, f, M, test_loader, 1, 1, device, verbose=True)
+    
+    # ------------------------------------------evaluate baseline---------------------------------------
+    acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all  = eval_baseline(G, f, M, test_loader, 1, 1, device, verbose=True)
+    
+    # ------------------------------------------evaluate advgan---------------------------------------------
+#    acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all = eval_advgan(G, f, thres, test_loader, 1, 1, device, verbose=True)
+
     print('Test Acc: %.5f'%(acc_test))
     print('SSIM: %.5f'%(loss_ssim))
+    print('PSNR %.5f'%(loss_psnr))
+    print('Distortion for successful samples %.5f'%(distort_success))
+    print('Distortion for all samples %.5f'%(distort_all))
 

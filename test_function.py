@@ -219,10 +219,14 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
 
 
 def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
-    n = 0
+    n = 0 # count total number of samples
+    n_success = 0 # count total number of successful samples
     acc = 0
     ssim = 0
     psnr = 0 # for PSNR
+    distort_success = 0 # for average distortion for successful images
+    distort_all = 0 # for average distortion for all images
+    
     criterionMSE = nn.MSELoss().to(device) # for PSNR
     class_acc = np.zeros((1,10))
     class_num = np.zeros((1,10))
@@ -248,9 +252,14 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
         mse = criterionMSE(y_pred,y_true.float()) # for PSNR
         pnsr_temp = 10 * log10(1/mse.item())
         psnr += pnsr_temp
+        distort_all_temp = torch.dist(img_real,img_fake, 1) # use L1 loss
+        distort_all += distort_all_temp
         class_num[0,y_true] = class_num[0,y_true]+1
         if torch.max(y_pred, 1)[1] != y_true:
             class_acc[0,y_true] = class_acc[0,y_true]+1
+            distort_success_temp = torch.dist(img_real, img_fake, 1) # use L1 loss
+            distort_success += distort_success_temp
+            n_success += 1
         ssim += pytorch_ssim.ssim(img_real, img_fake).item()
         n += img_real.size(0)
         if i % 100 == 0:
@@ -260,13 +269,18 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     # count number of samples for each class
     
     acc_class = np.divide(class_acc,class_num)
-    return acc/n, ssim/n, psnr/n, acc_class # returns attach success rateclass_accclass_acc
+    n_pixel = img_real.size(2) * img_real.size(2)
+    return acc/n, ssim/n, psnr/n, acc_class, distort_success/(n_success*n_pixel), distort_all/(n*n_pixel) # returns attach success rateclass_accclass_acc
 
 def eval_advgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
-    n = 0
+    n = 0 # count total number of samples
+    n_success = 0 # count total number of successful samples
     acc = 0
     ssim = 0
-    psnr = 0 # for PSNR
+    psnr = 0 # for average PSNR
+    distort_success = 0 # for average distortion for successful images
+    distort_all = 0 # for average distortion for all images
+    
     criterionMSE = nn.MSELoss().to(device) # for PSNR
     class_acc = np.zeros((1,10))
     class_num = np.zeros((1,10))
@@ -284,12 +298,18 @@ def eval_advgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
         mse = criterionMSE(y_pred,y_true.float()) # for PSNR
         pnsr_temp = 10 * log10(1/mse.item())
         psnr += pnsr_temp
+        distort_all_temp = torch.dist(img_real,img_fake, 1) # use L1 loss
+        distort_all += distort_all_temp
         class_num[0,y_true] = class_num[0,y_true]+1
         if torch.max(y_pred, 1)[1] != y_true:
             class_acc[0,y_true] = class_acc[0,y_true]+1
+            distort_success_temp = torch.dist(img_real, img_fake, 1) # use L1 loss
+            distort_success += distort_success_temp
+            n_success += 1
         ssim += pytorch_ssim.ssim(img_real, img_fake).item()
         n += img_real.size(0)
         if i % 100 == 0:
             print(i)
     acc_class = np.divide(class_acc,class_num)
-    return acc/n, ssim/n, psnr/n, acc_class # returns attach success rateclass_accclass_acc
+    n_pixel = img_real.size(2) * img_real.size(2)
+    return acc/n, ssim/n, psnr/n, acc_class, distort_success/(n_success*n_pixel), distort_all/(n*n_pixel) # returns attach success rateclass_accclass_acc

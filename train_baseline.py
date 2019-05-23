@@ -87,7 +87,7 @@ if __name__ == '__main__':
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     alpha = 1 # gan loss multiplication factor
-    beta = 2 # for hinge loss
+    beta = 3.5 # for hinge loss
     num_steps = 300 # number of generator updates for 1 discriminator update
     M = 0 # magnitude of perlin noise on a scale of 255
 
@@ -100,8 +100,6 @@ if __name__ == '__main__':
     loss_real_epoch = np.array([]).reshape(0,1)
     loss_fake_epoch = np.array([]).reshape(0,1)
     
-    
-
     for epoch in range(epochs):
         acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist = train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
         acc_test, _ = test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True)

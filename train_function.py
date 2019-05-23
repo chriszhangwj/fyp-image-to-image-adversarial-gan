@@ -194,7 +194,7 @@ def train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan
         optimizer_D.zero_grad()
         if i % num_steps == 0:
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid*0.5)
+            loss_real = criterion_gan(D(img_real), valid)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
             loss_d = 0.5*loss_real + 0.5*loss_fake # as defined in LSGAN paper
             loss_d.backward(torch.ones_like(loss_d))
@@ -308,7 +308,6 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
     G.train()
     D.train()
-    use_noise = False
     
     loss_adv_hist = np.array([]).reshape(0,1)
     loss_gan_hist = np.array([]).reshape(0,1)
@@ -364,7 +363,6 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 #            if use_noise == True:
 #                wgn = Variable(img_real.data.new(img_real.size()).normal_(0,0.1))
             
-            
             # Train the Discriminator
             # loss_real = criterion_gan(D(img_real), valid)
             loss_real = criterion_gan(D(img_real), valid*0.5)
@@ -409,7 +407,7 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
 
 
 
-def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion_dis, criterion_aux, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
+def train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, alpha, beta, gamma, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
     n = 0
     acc = 0 # attack success rate
     num_steps = num_steps
@@ -443,9 +441,9 @@ def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion
         x1_fake, _ = D(img_fake)
         loss_gan = criterion_gan(x1_fake, valid)
         # perturbation loss
-        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1) - thres))
+        loss_hinge = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=1, dim=1)))
         # total generator loss
-        loss_g = 4 * loss_adv + alpha*loss_gan + beta*loss_hinge
+        loss_g = loss_adv + alpha*loss_gan + beta*loss_hinge
    
         loss_g.backward(torch.ones_like(loss_g))
         optimizer_G.step()
@@ -459,12 +457,10 @@ def train_baseline_ACGAN(G, D, f, thres, criterion_adv, criterion_gan, criterion
             #loss_fake = criterion_gan(D(img_fake.detach()), fake)
             x1_real, _ = D(img_real)
             x1_fake, x2_fake = D(img_fake.detach())
-            loss_real = criterion_dis(x1_real, valid*0.5)
-            loss_fake = criterion_dis(x1_fake, fake)
-            print(x2_fake.size())
-            print(y_true.size())
+            loss_real = criterion_gan(x1_real, valid*0.5)
+            loss_fake = criterion_gan(x1_fake, fake)
             loss_aux = criterion_aux(x2_fake, y_true)
-            loss_d = loss_real + loss_fake + loss_aux# # as defined in LSGAN paper, method 2
+            loss_d = loss_real + loss_fake + gamma * loss_aux
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 

@@ -5,10 +5,10 @@ from torch.optim.lr_scheduler import StepLR
 
 import target_models
 from generators import Generator_MNIST as Generator
-from discriminators import Discriminator_ACGAN, Discriminator_ACGAN2
+from discriminators import Discriminator_ACGAN, Discriminator_ACGAN2, Attn
 from prepare_dataset import load_dataset
-from train_function import train_baseline_ACGAN
-from test_function import test_perlin
+from train_function import train_baseline_atnet
+from test_function import test_baseline_atnet
 
 import numpy as np
 import argparse
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 60
+    epochs = 20
 
     print('Training AdvGAN (Untargeted)')
 
@@ -64,6 +64,7 @@ if __name__ == '__main__':
     D = Discriminator_ACGAN2()
     G = Generator()
     f = getattr(target_models, model_name)(in_channels, num_classes)
+    A = Attn()
 
     checkpoint_path = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -74,9 +75,11 @@ if __name__ == '__main__':
         D.cuda()
         G.cuda()
         f.cuda()
+        A.cuda()
 
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
     optimizer_D = optim.Adam(D.parameters(), lr=lr)
+    optimizer_A = optim.Adam(D.parameters(), lr=lr)
 
     scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
     scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
@@ -84,8 +87,8 @@ if __name__ == '__main__':
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     criterion_aux = nn.CrossEntropyLoss() # for aux classifier, note that we do not use NLL loss
-    alpha = 1 # gan loss multiplication factor
-    beta = 5 # for hinge loss
+    alpha = 15 #attnMapattnMap gan loss multiplication factor
+    beta = 15 # for hinge loss
     gamma = 0.0 # for aux loss
     num_steps = 300 # number of generator updates for 1 discriminator update
     M = 0 # magnitude of perlin noise on a scale of 255
@@ -102,8 +105,8 @@ if __name__ == '__main__':
     
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist = train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, alpha, beta, gamma, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test, _ = test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist = train_baseline_atnet(G, D, f, A, criterion_adv, criterion_gan, criterion_aux, alpha, beta, gamma, train_loader, optimizer_G, optimizer_D, optimizer_A, epoch, epochs, device, num_steps, verbose=True)
+        acc_test, _ = test_baseline_atnet(G, f, A, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])

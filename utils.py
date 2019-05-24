@@ -8,6 +8,7 @@ from generators import Generator_MNIST as Generator
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from noise import pnoise2
+torch.manual_seed(0)
 
 def tsne_plot(data, label, dim=2):
     #data is the feature vector
@@ -170,3 +171,8 @@ def colorize(img, color = [1, 1, 1]): # colorize perlin noise for coloured image
     if img.ndim == 2: # expand to include color channels
         img = np.expand_dims(img, 2)
     return (img - 0.5) * color + 0.5 # output pixel range [0, 1]
+
+def toZeroThreshold(x, t=0.5):
+    zeros = torch.cuda.FloatTensor(x.shape).fill_(0.0)
+    ones = torch.cuda.FloatTensor(x.shape).fill_(1.0)
+    return torch.where(x > t, ones, zeros)

@@ -6,8 +6,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from noise import pnoise2
-from utils import perlin, colorize
+from utils import perlin, colorize, toZeroThreshold
 from math import log10
+torch.manual_seed(0)
 
 def test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True):
     n = 0
@@ -212,6 +213,62 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
+
+#        if verbose:
+#            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
+    return acc/n, ssim/n # returns attach success rate
+
+
+
+def test_baseline_atnet(G, f, A, test_loader, epoch, epochs, device, verbose=True):
+    n = 0
+    acc = 0
+    ssim = 0
+    class_acc = np.zeros((1,10)) # count the number of success for each class
+    
+
+    G.eval()
+    A.eval()
+    for i, (img, label) in enumerate(test_loader):
+        img_real = Variable(img.to(device))
+
+        img_fake = torch.clamp(G(img_real), 0, 1)
+        pert = img_fake - img_real
+
+        y_pred = f(img_fake)
+
+        y_true = Variable(label.to(device))
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+        ssim += pytorch_ssim.ssim(img_real, img_fake).item()
+        n += img.size(0)
+      
+    img_real = img_real.cpu()
+    img_real = img_real.data.squeeze().numpy()
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(img_real[1,:,:], cmap = 'gray')
+    plt.title('Real image: digit %d'%(label[1]))
+    plt.show()    
+    
+    
+    img_fake = img_fake.cpu()
+    adversarial_img = img_fake.data.squeeze().numpy()
+    label = label.cpu()
+    label = label.data.squeeze().numpy()
+    plt.figure(figsize=(1.5,1.5))
+    plt.imshow(adversarial_img[1,:,:], cmap = 'gray')
+    plt.title('Fake image: digit %d'%(label[1]))
+    plt.show()   
+    
+    
+#    plt.figure(figsize=(1.5,1.5))
+#    plt.imshow(img_real[3,:,:], cmap = 'gray')
+#    plt.title('Real image: digit %d'%(label[1]))
+#    plt.show()    
+#    
+#    plt.figure(figsize=(1.5,1.5))
+#    plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
+#    plt.title('Real image: digit %d'%(label[1]))
+#    plt.show()    
 
 #        if verbose:
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")

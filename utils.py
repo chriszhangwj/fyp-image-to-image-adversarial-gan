@@ -155,20 +155,81 @@ def tile_evolution():
         path = 'images/train_evolution/%d/'%(i)
         images = os.listdir(path)
         images.sort()
-        for j, image in enumerate(images):
-            img_path = os.path.join(path, image)
+            
+        for j in range(11): # loop epochs
+            img_fake = '%d_epoch_%d.png'%(i,j)
+            img_path = os.path.join(path, img_fake)
             img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-
-            a = int(image.split('_')[0]) # split string and obtain key word
-            b = int(image.split('_')[2].split('.')[0])
-
+            a = int(img_fake.split('_')[0]) # split string and obtain key word
+            b = int(img_fake.split('_')[2].split('.')[0])
             arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+            
             
     plt.figure(figsize=(7,7))
     plt.imshow(arr, cmap = 'gray')
     plt.axis('off')
-    #plt.tick_params(axis='both', which='both',bottom=False,top=False,labelbottom=False)
     plt.show()    
+    
+def plot_pert():
+    arr = np.zeros((28*3, 28*10), dtype=np.uint8)
+    for i in range(10):
+        path = 'images/train_evolution/%d'%(i)
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d_epoch_0.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        a=0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+        
+        path = 'images/train_evolution/pert/'
+        img_pert = '%d_pert.png'%(i)
+        img_path = os.path.join(path, img_pert)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        a = 1
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+        
+        path = 'images/train_evolution/%d/'%(i)
+        img_adv = '%d_epoch_10.png'%(i)
+        img_path = os.path.join(path, img_adv)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        a = 2
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+            
+    plt.figure(figsize=(20,3))
+    ax = plt.gca()
+    im = ax.imshow(arr)
+    plt.axis('off')
+    plt.colorbar(im)
+    plt.show()    
+    
+    # show un-normalised perturbation map
+    
+    arr = np.zeros((28*1, 28*10), dtype=np.int16)
+    for i in range(10):
+        path = 'images/train_evolution/%d'%(i)
+        img_real = '%d_epoch_0.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_fake = '%d_epoch_10.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        img_pert = img_fake - img_real # [-255,255]        
+        a = 0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+    
+    plt.figure(figsize=(20,1))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='coolwarm')
+    plt.axis('off')
+    plt.colorbar(im)
+    #plt.tick_params(axis='both', which='both',bottom=False,top=False,labelbottom=False)
+    plt.show()  
 
 def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
     

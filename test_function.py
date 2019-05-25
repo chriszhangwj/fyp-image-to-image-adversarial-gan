@@ -5,6 +5,8 @@ import pytorch_ssim
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
+import os
 from noise import pnoise2
 from utils import perlin, colorize, toZeroThreshold
 from math import log10
@@ -59,9 +61,8 @@ def test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, v
     plt.figure(figsize=(1.5,1.5))
     plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
-    plt.show()    
-#        if verbose:
-#            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
+    plt.show() 
+
     return acc/n, ssim/n # returns attach success rate
 
 def test_semitargeted(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
@@ -194,13 +195,12 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
     
-    
     img_fake = img_fake.cpu()
-    adversarial_img = img_fake.data.squeeze().numpy()
+    img_fake = img_fake.data.squeeze().numpy()
     label = label.cpu()
     label = label.data.squeeze().numpy()
     plt.figure(figsize=(1.5,1.5))
-    plt.imshow(adversarial_img[1,:,:], cmap = 'gray')
+    plt.imshow(img_fake[1,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
     
@@ -210,11 +210,121 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     plt.show()    
     
     plt.figure(figsize=(1.5,1.5))
-    plt.imshow(adversarial_img[3,:,:], cmap = 'gray')
+    plt.imshow(img_fake[3,:,:], cmap = 'gray')
     plt.title('Real image: digit %d'%(label[1]))
     plt.show()    
+    
+    path = 'images/train_evolution'
+    if epoch == 0:
+        real_img_0 = img_real[9,:,:]*255 # restore to [0,255]
+        real_img_0 = real_img_0.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '0', '0_epoch_0.png'), real_img_0)
+        real_img_1 = img_real[0,:,:]*255 # restore to [0,255]
+        real_img_1 = real_img_1.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '1', '1_epoch_0.png'), real_img_1)
+        real_img_2 = img_real[1,:,:]*255 # restore to [0,255]
+        real_img_2 = real_img_2.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '2', '2_epoch_0.png'), real_img_2)
+        real_img_3 = img_real[2,:,:]*255 # restore to [0,255]
+        real_img_3 = real_img_3.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '3', '3_epoch_0.png'), real_img_3)
+        real_img_4 = img_real[3,:,:]*255 # restore to [0,255]
+        real_img_4 = real_img_4.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '4', '4_epoch_0.png'), real_img_4)
+        real_img_5 = img_real[4,:,:]*255 # restore to [0,255]
+        real_img_5 = real_img_5.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '5', '5_epoch_0.png'), real_img_5)
+        real_img_6 = img_real[5,:,:]*255 # restore to [0,255]
+        real_img_6 = real_img_6.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '6', '6_epoch_0.png'), real_img_6)
+        real_img_7 = img_real[6,:,:]*255 # restore to [0,255]
+        real_img_7 = real_img_7.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '7', '7_epoch_0.png'), real_img_7)
+        real_img_8 = img_real[7,:,:]*255 # restore to [0,255]
+        real_img_8 = real_img_8.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '8', '8_epoch_0.png'), real_img_8)
+        real_img_9 = img_real[8,:,:]*255 # restore to [0,255]
+        real_img_9 = real_img_9.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path, '9', '9_epoch_0.png'), real_img_9)
+        
+        
+    adv_img_0 = img_fake[9,:,:]*255 # restore to [0,255]
+    adv_img_0 = adv_img_0.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'0','0_epoch_%d.png'%(epoch+1)), adv_img_0)
+    adv_img_1 = img_fake[0,:,:]*255 # restore to [0,255]
+    adv_img_1 = adv_img_1.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'1','1_epoch_%d.png'%(epoch+1)), adv_img_1)
+    adv_img_2 = img_fake[1,:,:]*255 # restore to [0,255]
+    adv_img_2 = adv_img_2.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'2','2_epoch_%d.png'%(epoch+1)), adv_img_2)    
+    adv_img_3 = img_fake[2,:,:]*255 # restore to [0,255]
+    adv_img_3 = adv_img_3.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'3','3_epoch_%d.png'%(epoch+1)), adv_img_3)
+    adv_img_4 = img_fake[3,:,:]*255 # restore to [0,255]
+    adv_img_4 = adv_img_4.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'4','4_epoch_%d.png'%(epoch+1)), adv_img_4)
+    adv_img_5 = img_fake[4,:,:]*255 # restore to [0,255]
+    adv_img_5 = adv_img_5.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'5','5_epoch_%d.png'%(epoch+1)), adv_img_5)    
+    adv_img_6 = img_fake[5,:,:]*255 # restore to [0,255]
+    adv_img_6 = adv_img_6.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'6','6_epoch_%d.png'%(epoch+1)), adv_img_6)    
+    adv_img_7 = img_fake[6,:,:]*255 # restore to [0,255]
+    adv_img_7 = adv_img_7.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'7','7_epoch_%d.png'%(epoch+1)), adv_img_7)
+    adv_img_8 = img_fake[7,:,:]*255 # restore to [0,255]
+    adv_img_8 = adv_img_8.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'8','8_epoch_%d.png'%(epoch+1)), adv_img_8)  
+    adv_img_9 = img_fake[8,:,:]*255 # restore to [0,255]
+    adv_img_9 = adv_img_9.astype(np.uint8) # set data type
+    cv2.imwrite(os.path.join(path,'9','9_epoch_%d.png'%(epoch+1)), adv_img_9)  
+    
+    if epoch == epochs-1: # save final perturbation
+        img_pert = img_real - img_fake
+        img_pert_0 = img_pert[9,:,:]*255 # restore to [0,255]
+        img_pert_0 = img_pert_0.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','0_pert.png'), img_pert_0)
+            
+        img_pert_1 = img_pert[0,:,:]*255 # restore to [0,255]
+        img_pert_1 = img_pert_1.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','1_pert.png'), img_pert_1)
+        
+        img_pert_2 = img_pert[1,:,:]*255 # restore to [0,255]
+        img_pert_2 = img_pert_2.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','2_pert.png'), img_pert_2)
+        
+        img_pert_3 = img_pert[2,:,:]*255 # restore to [0,255]
+        img_pert_3 = img_pert_3.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','3_pert.png'), img_pert_3)
+        
+        img_pert_4 = img_pert[3,:,:]*255 # restore to [0,255]
+        img_pert_4 = img_pert_4.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','4_pert.png'), img_pert_4)
+        
+        img_pert_5 = img_pert[4,:,:]*255 # restore to [0,255]
+        img_pert_5 = img_pert_5.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','5_pert.png'), img_pert_5)
+        
+        img_pert_6 = img_pert[5,:,:]*255 # restore to [0,255]
+        img_pert_6 = img_pert_6.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','6_pert.png'), img_pert_6)
+        
+        img_pert_7 = img_pert[6,:,:]*255 # restore to [0,255]
+        img_pert_7 = img_pert_7.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','7_pert.png'), img_pert_7)
+        
+        img_pert_8 = img_pert[7,:,:]*255 # restore to [0,255]
+        img_pert_8 = img_pert_8.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','8_pert.png'), img_pert_8)
+        
+        img_pert_9 = img_pert[8,:,:]*255 # restore to [0,255]
+        img_pert_9 = img_pert_9.astype(np.uint8) # set data type
+        cv2.imwrite(os.path.join(path,'pert','9_pert.png'), img_pert_9)
+        
 
-#        if verbose:
+    
+    
+    #        if verbose:
 #            print('Test [%d/%d]: [%d/%d]' %(epoch+1, epochs, i, len(test_loader)), end="\r")
     return acc/n, ssim/n # returns attach success rate
 

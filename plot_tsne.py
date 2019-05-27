@@ -403,11 +403,11 @@ device = 'cuda'
 #get_distort(test_loader, 'advgan', device)
 l0_advgan, l1_advgan, l2_advgan, linf_advgan, ssim_advgan, psnr_advgan = get_indiv_class(test_loader, 'advgan', device)
 l0_fgsm, l1_fgsm, l2_fgsm, linf_fgsm, ssim_fgsm, psnr_fgsm = get_indiv_class(test_loader, 'fgsm', device)
-#l0_ours, l1_ours, l2_ours, linf_ours, ssim_ours, psnr_ours = get_indiv_class(test_loader, 'ours', device)
+l0_ours, l1_ours, l2_ours, linf_ours, ssim_ours, psnr_ours = get_indiv_class(test_loader, 'ours', device)
 
 l0_advgan = np.reshape(l0_advgan,(10,1))
 l0_fgsm = np.reshape(l0_fgsm,(10,1))
-#l0_ours = np.reshape(l0_ours,(10,1))
+l0_ours = np.reshape(l0_ours,(10,1))
 
 l1_advgan = np.reshape(l1_advgan,(10,1))
 l1_fgsm = np.reshape(l1_fgsm,(10,1))
@@ -436,8 +436,23 @@ opacity = 0.8
 
 plt_fgsm = plt.bar(y_pos, l0_fgsm, bar_width, alpha=0.6, label='FGSM')
 plt_advgan = plt.bar(y_pos + bar_width, l0_advgan, bar_width, alpha=0.6, label='AdvGAN')
-plt.xticks(y_pos + bar_width, {'0','1','2','3','4','5','6','7','8','9'})
+plt_ours = plt.bar(y_pos + 2*bar_width, l0_ours, bar_width, alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
 plt.xlabel('Class')
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+
+#plt_fgsm = plt.bar(y_pos, l1_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_advgan = plt.bar(y_pos + bar_width, l1_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 2*bar_width, l1_ours, bar_width, align='center', alpha=0.6, label='Ours')
+#
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.legend()
+#plt.tight_layout()
+#plt.show()
+
+

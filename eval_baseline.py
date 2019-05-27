@@ -3,7 +3,7 @@ import target_models
 from generators import Generator_MNIST as Generator
 from prepare_dataset import load_dataset
 from train_function import train
-from test_function import eval_baseline, eval_advgan
+from test_function import eval_baseline, eval_advgan, eval_advgan_batch
 
 import cv2
 import numpy as np
@@ -33,27 +33,28 @@ if __name__ == '__main__':
 
     # load target model
     f = getattr(target_models, model_name)(1, 10)
-    checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
+    checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist_temp.pth.tar'%(model_name))
     checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
     f.load_state_dict(checkpoint_f["state_dict"])
     f.eval()
 
     # --------------------------------------load baseline generator------------------------------------
-    G = Generator()
-    checkpoint_name_G = '%s_untargeted.pth.tar'%(model_name)
-    checkpoint_path_G = os.path.join('saved', 'baseline', checkpoint_name_G)
-    #checkpoint_path_G = os.path.join('saved','Model_C_untargeted.pth.tar')
-    checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
-    G.load_state_dict(checkpoint_G['state_dict'])
-    G.eval()
+#    G = Generator()
+#    checkpoint_name_G = '%s_untargeted.pth.tar'%(model_name)
+#    checkpoint_path_G = os.path.join('saved', 'baseline', checkpoint_name_G)
+#    #checkpoint_path_G = os.path.join('saved','Model_C_untargeted.pth.tar')
+#    checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
+#    G.load_state_dict(checkpoint_G['state_dict'])False
+#    G.eval()
     
     # --------------------------------------load advgan generator--------------------------------------
-#    G = Generator()
-#    checkpoint_name_G = 'advgan_%s_untargeted.pth.tar'%(model_name)
-#    checkpoint_path_G = os.path.join('saved', 'advgan', checkpoint_name_G)
-#    checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
-#    G.load_state_dict(checkpoint_G['state_dict'])
-#    G.eval()   
+    G = Generator()
+    checkpoint_name_G = 'advgan_%s_untargeted.pth.tar'%(model_name)
+    checkpoint_path_G = os.path.join('saved', 'advgan', checkpoint_name_G)
+    #checkpoint_path_G = os.path.join('saved', 'generators','bound_0.3', 'Model_C_untargeted.pth.tar')
+    checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
+    G.load_state_dict(checkpoint_G['state_dict'])
+    G.eval()   
     
     # compute test attack success rate
     device = 'cuda' if gpu else 'cpu'
@@ -62,17 +63,23 @@ if __name__ == '__main__':
         f.cuda()
     batch_size=1
     train_data, test_data, in_channels, num_classes = load_dataset('mnist')
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
+    #test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
     
     # ------------------------------------------evaluate baseline---------------------------------------
-    acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all  = eval_baseline(G, f, M, test_loader, 1, 1, device, verbose=True)
+#    acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all  = eval_baseline(G, f, M, test_loader, 1, 1, device, verbose=True)
     
     # ------------------------------------------evaluate advgan---------------------------------------------
-#    acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all = eval_advgan(G, f, thres, test_loader, 1, 1, device, verbose=True)
+    #acc_test, loss_ssim, loss_psnr, acc_class, distort_success, distort_all = eval_advgan(G, f, thres, test_loader, 1, 1, device, verbose=True)
 
+
+    # -------------------------------------------evaluate advgan plot---------------------------------------
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=128, shuffle=False, num_workers=4)
+    acc_test = eval_advgan_batch(G, f, thres, test_loader, 1, 1, device, verbose=True)
+
+    
     print('Test Acc: %.5f'%(acc_test))
-    print('SSIM: %.5f'%(loss_ssim))
-    print('PSNR %.5f'%(loss_psnr))
-    print('Distortion for successful samples %.5f'%(distort_success))
-    print('Distortion for all samples %.5f'%(distort_all))
+    #print('SSIM: %.5f'%(loss_ssim))
+    #print('PSNR %.5f'%(loss_psnr))
+    #print('Distortion for successful samples %.5f'%(distort_success))
+    #print('Distortion for all samples %.5f'%(distort_all))
 

@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', type=int, default=50, required=False, help='no. of epochs (default: 20)')
     parser.add_argument('--batch_size', type=int, default=128, required=False, help='batch size (default: 128)')
-    parser.add_argument('--lr', type=float, default=0.1, required=False, help='learning rate (default: 0.01)')
+    parser.add_argument('--lr', type=float, default=0.01, required=False, help='learning rate (default: 0.01)')
 
     parser.add_argument('--seed', type=int, default=0, required=False, help='random seed (default: 0)')
     parser.add_argument('--num_workers', type=int, default=4, required=False, help='no. of workers (default: 4)')
@@ -151,6 +151,6 @@ if __name__ == '__main__':
                         "optimizer": optimizer.state_dict(),
                         "is_best": is_best,
                         }, checkpoint_name="saved/target_models/checkpoint_%d_%s_%s.pth.tar"%(epoch, model_name, dataset_name),
-                            best_name="saved/target_models/best_%s_%s.pth.tar"%(model_name, dataset_name))
+                            best_name="saved/target_models/best_%s_%s_temp.pth.tar"%(model_name, dataset_name))
 
     # writer.close()

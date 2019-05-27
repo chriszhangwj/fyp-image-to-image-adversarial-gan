@@ -65,7 +65,7 @@ if __name__ == '__main__':
     model = 'Model_C'
     img_path = 'images/0.jpg'
     lr = 0.001 # original 0.001
-    epochs = 50
+    epochs = 15
     #epochs=1
     
     is_targeted = False
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     G = Generator()
     f = getattr(target_models, model_name)(in_channels, num_classes)
 
-    checkpoint_path = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
+    checkpoint_path = os.path.join('saved', 'target_models', 'best_%s_mnist_temp.pth.tar'%(model_name))
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
     f.load_state_dict(checkpoint["state_dict"])
     f.eval()
@@ -95,14 +95,14 @@ if __name__ == '__main__':
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
     optimizer_D = optim.Adam(D.parameters(), lr=lr)
 
-    scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
-    scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
+    scheduler_G = StepLR(optimizer_G, step_size=5, gamma=0.5)
+    scheduler_D = StepLR(optimizer_D, step_size=5, gamma=0.5)
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
-    alpha = 0.5 # gan loss multiplication factor
-    beta = 0.2 # for hinge loss
-    num_steps = 300 # number of generator updates for 1 discriminator update
+    alpha = 1 # gan loss multiplication factor
+    beta = 1 # for hinge loss
+    num_steps = 3 # number of generator updates for 1 discriminator update
     thres = c = 0.2 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'

@@ -171,7 +171,7 @@ def tile_evolution():
     plt.show()    
     
 def plot_pert():
-    arr = np.zeros((28*3, 28*10), dtype=np.uint8)
+    arr = np.zeros((28*3, 28*10), dtype=np.int16)
     for i in range(10):
         path = 'images/train_evolution/%d'%(i)
         images = os.listdir(path)
@@ -179,24 +179,21 @@ def plot_pert():
         
         img_real = '%d_epoch_0.png'%(i)
         img_path = os.path.join(path, img_real)
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        a=0
-        b = i
-        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
-        
-        path = 'images/train_evolution/pert/'
-        img_pert = '%d_pert.png'%(i)
-        img_path = os.path.join(path, img_pert)
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        a = 1
-        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
-        
-        path = 'images/train_evolution/%d/'%(i)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         img_adv = '%d_epoch_10.png'%(i)
         img_path = os.path.join(path, img_adv)
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        
+        a=0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_real
+        img_pert = abs(img_fake - img_real)
+        a = 1
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
         a = 2
-        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_fake
             
     plt.figure(figsize=(20,3))
     ax = plt.gca()
@@ -205,8 +202,7 @@ def plot_pert():
     plt.colorbar(im)
     plt.show()    
     
-    # show un-normalised perturbation map
-    
+    # show un-normalised perturbation map  
     arr = np.zeros((28*1, 28*10), dtype=np.int16)
     for i in range(10):
         path = 'images/train_evolution/%d'%(i)
@@ -228,7 +224,65 @@ def plot_pert():
     im = ax.imshow(arr,cmap='coolwarm')
     plt.axis('off')
     plt.colorbar(im)
-    #plt.tick_params(axis='both', which='both',bottom=False,top=False,labelbottom=False)
+    plt.show()  
+    
+def plot_pert_advgan():
+    arr = np.zeros((28*3, 28*10), dtype=np.int16)
+    for i in range(10):
+        path = 'images/advgan/'
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        
+        a=0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_real
+        img_pert = abs(img_fake - img_real)
+        a=1
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+        a = 2
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_fake
+            
+    plt.figure(figsize=(20,3))
+    ax = plt.gca()
+    im = ax.imshow(arr)
+    plt.axis('off')
+    plt.colorbar(im)
+    plt.show()   
+    
+  
+    # show un-normalised perturbation map  
+    arr = np.zeros((28*1, 28*10), dtype=np.int16)
+    for i in range(10):
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        img_pert = img_fake - img_real # [-255,255]    
+        a = 0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+    
+    plt.figure(figsize=(20,1))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='coolwarm')
+    plt.axis('off')
+    plt.colorbar(im)
+    im.set_clim(-255,255)
     plt.show()  
 
 def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map

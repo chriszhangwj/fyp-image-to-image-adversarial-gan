@@ -78,7 +78,7 @@ class Model_C(nn.Module):
         x = x.view(x.size(0), -1)
         o = self.fc1(x)
         x = F.relu(o)
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = F.relu(self.fc1(x))
         x = self.fc2(x)
         #x = x / self.T

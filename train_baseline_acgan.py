@@ -9,6 +9,7 @@ from discriminators import Discriminator_ACGAN, Discriminator_ACGAN2
 from prepare_dataset import load_dataset
 from train_function import train_baseline_ACGAN
 from test_function import test_perlin
+from utils import tile_evolution, plot_pert
 
 import numpy as np
 import argparse
@@ -46,19 +47,19 @@ if __name__ == '__main__':
     epochs = args.epochs
     model_name = args.model
     target = args.target
-    thres = args.thres # thres is hard-coded below, change it
+    thres = args.thres # thres is hard-coded below, change itpi
     gpu = args.gpu
 
     dataset_name = 'mnist'
     model = 'Model_C'
     lr = 0.01 # original 0.001
-    epochs = 60
+    epochs = 20
 
     print('Training AdvGAN (Untargeted)')
 
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=num_workers)
     
     #D = Discriminator_ACGAN()
     D = Discriminator_ACGAN2()
@@ -76,7 +77,7 @@ if __name__ == '__main__':
         f.cuda()
 
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
-    optimizer_D = optim.Adam(D.parameters(), lr=lr)
+    optimizer_D = optim.Adam(D.parameters(), lr=lr/5)
 
     scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
     scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
@@ -84,8 +85,8 @@ if __name__ == '__main__':
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
     criterion_aux = nn.CrossEntropyLoss() # for aux classifier, note that we do not use NLL loss
-    alpha = 1 # gan loss multiplication factor
-    beta = 5 # for hinge loss
+    alpha = 5 # gan loss multiplication factor
+    beta = 10 # for hinge loss
     gamma = 0.0 # for aux loss
     num_steps = 300 # number of generator updates for 1 discriminator update
     M = 0 # magnitude of perlin noise on a scale of 255
@@ -169,5 +170,8 @@ if __name__ == '__main__':
     plt.ylim((0,1))
     plt.legend(loc='upper right')
     plt.show()
+    
+    tile_evolution()
+    plot_pert()
     
     

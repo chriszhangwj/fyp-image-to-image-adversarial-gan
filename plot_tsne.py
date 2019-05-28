@@ -411,48 +411,94 @@ l0_ours = np.reshape(l0_ours,(10,1))
 
 l1_advgan = np.reshape(l1_advgan,(10,1))
 l1_fgsm = np.reshape(l1_fgsm,(10,1))
-#l1_ours = np.reshape(l1_ours,(10,1))
+l1_ours = np.reshape(l1_ours,(10,1))
 
 l2_advgan = np.reshape(l2_advgan,(10,1))
 l2_fgsm = np.reshape(l2_fgsm,(10,1))
-#l2_ours = np.reshape(l2_ours,(10,1))
+l2_ours = np.reshape(l2_ours,(10,1))
 
 linf_advgan = np.reshape(linf_advgan,(10,1))
 linf_fgsm = np.reshape(linf_fgsm,(10,1))
-#linf_ours = np.reshape(linf_ours,(10,1))
+linf_ours = np.reshape(linf_ours,(10,1))
 
 ssim_advgan = np.reshape(ssim_advgan,(10,1))
 ssim_fgsm = np.reshape(ssim_fgsm,(10,1))
-#ssim_ours = np.reshape(ssim_ours,(10,1))
+ssim_ours = np.reshape(ssim_ours,(10,1))
 
 psnr_advgan = np.reshape(psnr_advgan,(10,1))
 psnr_fgsm = np.reshape(psnr_fgsm,(10,1))
-#psnr_ours = np.reshape(psnr_ours,(10,1))
+psnr_ours = np.reshape(psnr_ours,(10,1))
 
 mnist_class = {'0','1','2','3','4','5','6','7','8','9'}
 y_pos = np.arange(len(mnist_class))
-bar_width = 0.35
+bar_width = 0.25
 opacity = 0.8
 
 plt_fgsm = plt.bar(y_pos, l0_fgsm, bar_width, alpha=0.6, label='FGSM')
-plt_advgan = plt.bar(y_pos + bar_width, l0_advgan, bar_width, alpha=0.6, label='AdvGAN')
+plt_advgan = plt.bar(y_pos + 1*bar_width, l0_advgan, bar_width, alpha=0.6, label='AdvGAN')
 plt_ours = plt.bar(y_pos + 2*bar_width, l0_ours, bar_width, alpha=0.6, label='Ours')
 
 plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
 plt.xlabel('Class')
+plt.ylabel('Loss')
 plt.legend()
 plt.tight_layout()
 plt.show()
 
 
-#plt_fgsm = plt.bar(y_pos, l1_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-#plt_advgan = plt.bar(y_pos + bar_width, l1_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-#plt_ours = plt.bar(y_pos + 2*bar_width, l1_ours, bar_width, align='center', alpha=0.6, label='Ours')
-#
-#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-#plt.xlabel('Class')
-#plt.legend()
-#plt.tight_layout()
-#plt.show()
+plt_fgsm = plt.bar(y_pos, l1_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+plt_advgan = plt.bar(y_pos + bar_width, l1_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+plt_ours = plt.bar(y_pos + 2*bar_width, l1_ours, bar_width, align='center', alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+plt.xlabel('Class')
+plt.ylabel('Loss')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt_fgsm = plt.bar(y_pos, l2_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+plt_advgan = plt.bar(y_pos + bar_width, l2_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+plt_ours = plt.bar(y_pos + 2*bar_width, l2_ours, bar_width, align='center', alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+plt.xlabel('Class')
+plt.ylabel('Loss')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt_fgsm = plt.bar(y_pos, linf_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+plt_advgan = plt.bar(y_pos + bar_width, linf_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+plt_ours = plt.bar(y_pos + 2*bar_width, linf_ours, bar_width, align='center', alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+plt.xlabel('Class')
+plt.ylabel('Loss')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt_fgsm = plt.bar(y_pos, ssim_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+plt_advgan = plt.bar(y_pos + bar_width, ssim_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+plt_ours = plt.bar(y_pos + 2*bar_width, ssim_ours, bar_width, align='center', alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+plt.xlabel('Class')
+plt.ylabel('SSIM')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt_fgsm = plt.bar(y_pos, psnr_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+plt_advgan = plt.bar(y_pos + bar_width, psnr_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+plt_ours = plt.bar(y_pos + 2*bar_width, psnr_ours, bar_width, align='center', alpha=0.6, label='Ours')
+
+plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+plt.xlabel('Class')
+plt.ylabel('PSNR (dB)')
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 

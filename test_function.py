@@ -337,10 +337,7 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
 def test_baseline_atnet(G, f, A, test_loader, epoch, epochs, device, verbose=True):
     n = 0
     acc = 0
-    ssim = 0
-    class_acc = np.zeros((1,10)) # count the number of success for each class
-    
-
+    ssim = 0    
     G.eval()
     A.eval()
     for i, (img, label) in enumerate(test_loader):
@@ -469,7 +466,7 @@ def eval_advgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
         mse = criterionMSE(y_pred,y_true.float()) # for PSNR
         pnsr_temp = 10 * log10(1/mse.item())
         psnr += pnsr_temp
-        distort_all_temp = torch.dist(img_real,img_fake, 1) # use L1 loss
+        distort_all_temp = torch.dist(img_real, img_fake, 1) # use L1 loss
         distort_all += distort_all_temp
         class_num[0,y_true] = class_num[0,y_true]+1
         if torch.max(y_pred, 1)[1] != y_true:

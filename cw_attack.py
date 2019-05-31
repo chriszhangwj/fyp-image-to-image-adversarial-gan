@@ -39,7 +39,7 @@ def test_cw(model, test_loader, device):
         else:
             print('attacking image ', i)
             img_real = Variable(img.to(device))
-            img_fake = cw_l2(model, img, label, c=3, max_iter=1500)
+            img_fake = cw_l2(model, img, label, kappa=0, c=4, max_iter=200)
             y_true = Variable(label.to(device))
             y_pred = f(img_fake)
             acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
@@ -48,7 +48,7 @@ def test_cw(model, test_loader, device):
 #        if (i >= 9984) and (i<9994):
 #             print('attacking image ', i)
 #             img_real = Variable(img.to(device))
-#             img_fake = cw_l2(model, img, label, c=8, max_iter=30)
+#             img_fake = cw_l2(model, img, label, c=4, max_iter=800)
 #             y_true = Variable(label.to(device))
 #             y_pred = f(img_fake)
 #             acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong

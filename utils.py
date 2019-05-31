@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -13,15 +15,15 @@ torch.manual_seed(0)
 def tsne_plot(data, label, dim=2):
     #data is the feature vector
     #label is the corresponding label
-    pca = PCA(n_components=3)
+    pca = PCA(n_components=10)
     pca_data = pca.fit_transform(data)
 
-    tsne = TSNE(n_components=dim, verbose = 1)
+    tsne = TSNE(n_components=dim, perplexity=50, verbose = 1)
     tsne_data = tsne.fit_transform(pca_data)
     
     color_map = label
     
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(7,7))
     for cl in range(10):
         indices = np.where(color_map==cl)
         indices = indices[0]
@@ -284,6 +286,65 @@ def plot_pert_advgan():
     plt.colorbar(im)
     im.set_clim(-255,255)
     plt.show()  
+    
+def plot_pert_cw():
+    arr = np.zeros((28*3, 28*10), dtype=np.int16)
+    for i in range(10):
+        path = 'images/cw/'
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        
+        a=0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_real
+        img_pert = abs(img_fake - img_real)
+        a=1
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+        a = 2
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_fake
+            
+    plt.figure(figsize=(20,3))
+    ax = plt.gca()
+    im = ax.imshow(arr)
+    plt.axis('off')
+    plt.colorbar(im)
+    plt.show()   
+    
+  
+    # show un-normalised perturbation map  
+    arr = np.zeros((28*1, 28*10), dtype=np.int16)
+    for i in range(10):
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        img_pert = img_fake - img_real # [-255,255]    
+        a = 0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+    
+    plt.figure(figsize=(20,1))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='coolwarm')
+    plt.axis('off')
+    plt.colorbar(im)
+    im.set_clim(-255,255)
+    plt.show()  
 
 def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
     
@@ -312,3 +373,35 @@ def toZeroThreshold(x, t=0.5):
     zeros = torch.cuda.FloatTensor(x.shape).fill_(0.0)
     ones = torch.cuda.FloatTensor(x.shape).fill_(1.0)
     return torch.where(x > t, ones, zeros)
+
+def cw_l2(model, images, labels, c=1e-6, kappa=0, max_iter=400, learning_rate=0.01) :
+    device = 'cuda'
+    images = images.to(device)     
+    labels = labels.to(device)
+    # Define f-function
+    def f(x) :
+        outputs = model(x)
+        one_hot_labels = torch.eye(len(outputs[0]))[labels].to(device)
+        i, _ = torch.max((1-one_hot_labels)*outputs, dim=1)
+        j = torch.masked_select(outputs, one_hot_labels.byte())        
+        # If untargeted, optimize for making the other class most likely 
+        return torch.clamp(j-i, min=-kappa)    
+    w = torch.zeros_like(images, requires_grad=True).to(device)
+    optimizer = optim.Adam([w], lr=learning_rate)
+    prev = 1e10    
+    for step in range(max_iter) :
+        a = 1/2*(nn.Tanh()(w) + 1)
+        loss1 = nn.MSELoss(reduction='sum')(a, images)
+        loss2 = torch.sum(c*f(a))
+        cost = loss1 + loss2
+        optimizer.zero_grad()
+        cost.backward()
+        optimizer.step()
+        # Early Stop when loss does not converge.
+        if step % (max_iter//10) == 0 :
+            if cost > prev :
+                print('Attack Stopped due to CONVERGENCE....')
+                return a
+            prev = cost    
+    attack_images = 1/2*(nn.Tanh()(w) + 1)
+    return attack_images

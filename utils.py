@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.autograd import Variable
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -345,6 +346,58 @@ def plot_pert_cw():
     plt.colorbar(im)
     im.set_clim(-255,255)
     plt.show()  
+    
+def plot_pert_deepfool():
+    arr = np.zeros((28*3, 28*10), dtype=np.int16)
+    for i in range(10):
+        path = 'images/deepfool/'
+        images = os.listdir(path)
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        a=0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_real
+        img_pert = abs(img_fake - img_real)
+        a=1
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+        a=2
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_fake     
+    plt.figure(figsize=(20,3))
+    ax = plt.gca()
+    im = ax.imshow(arr)
+    plt.axis('off')
+    plt.colorbar(im)
+    plt.show()   
+    # show un-normalised perturbation map  
+    arr = np.zeros((28*1, 28*10), dtype=np.int16)
+    for i in range(10):
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        img_pert = img_fake - img_real # [-255,255]    
+        a = 0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
+    
+    plt.figure(figsize=(20,1))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='coolwarm')
+    plt.axis('off')
+    plt.colorbar(im)
+    im.set_clim(-255,255)
+    plt.show()  
 
 def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
     
@@ -405,3 +458,59 @@ def cw_l2(model, images, labels, c=1e-6, kappa=0, max_iter=400, learning_rate=0.
             prev = cost    
     attack_images = 1/2*(nn.Tanh()(w) + 1)
     return attack_images
+
+class Attacker:
+    def __init__(self, clip_max=1, clip_min=0):
+        self.clip_max = clip_max
+        self.clip_min = clip_min
+
+    def generate(self, model, x, y):
+        pass
+
+class DeepFool(Attacker):
+    def __init__(self, max_iter=50, clip_max=1, clip_min=0):
+        super(DeepFool, self).__init__(clip_max, clip_min)
+        self.max_iter = max_iter
+
+    def generate(self, model, x, y, device):
+        nx = Variable(x.to(device)) # image
+        nx.requires_grad_()
+        eta = torch.zeros(nx.shape) # perturbation
+        eta = Variable(eta.to(device))      
+        out = model(nx+eta)
+        n_class = out.shape[1]
+        py = out.max(1)[1].item()
+        ny = out.max(1)[1].item()
+        i_iter = 0
+        while py == ny and i_iter < self.max_iter:
+            out[0, py].backward(retain_graph=True)
+            grad_np = nx.grad.data.clone()
+            value_l = np.inf
+            ri = None
+            for i in range(n_class):
+                if i == py:
+                    continue
+                nx.grad.data.zero_()
+                out[0, i].backward(retain_graph=True)
+                grad_i = nx.grad.data.clone()
+
+                wi = grad_i - grad_np
+                fi = out[0, i] - out[0, py]
+                fi = fi.cpu()
+                wi = wi.cpu()
+                value_i = np.abs(fi.item()) / np.linalg.norm(wi.numpy().flatten())
+                if value_i < value_l:
+                    ri = value_i/np.linalg.norm(wi.numpy().flatten()) * wi
+                
+            ri = Variable(ri.to(device))
+            eta += ri.clone()
+            nx.grad.data.zero_()
+            temp = torch.clamp(nx+eta,0,1)
+            out = model(temp)
+            py = out.max(1)[1].item()
+            i_iter += 1
+            if i_iter+1 == self.max_iter:
+                print('failed to converge')      
+        x_adv = nx + eta
+        x_adv.clamp_(self.clip_min, self.clip_max)
+        return x_adv.detach()

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import os
+import cv2
 import target_models
 import matplotlib.pyplot as plt
 from torch.autograd import Variable
@@ -33,8 +34,8 @@ class DeepFool(Attacker):
         n_class = out.shape[1]
         py = out.max(1)[1].item()
         ny = out.max(1)[1].item()
-        print('py', py)
-        print('ny', ny)
+        #print('py', py)
+        #print('ny', ny)
 
         i_iter = 0
         while py == ny and i_iter < self.max_iter:
@@ -58,7 +59,7 @@ class DeepFool(Attacker):
 
                 if value_i < value_l:
                     ri = value_i/np.linalg.norm(wi.numpy().flatten()) * wi
-
+                
             ri = Variable(ri.to(device))
             eta += ri.clone()
             nx.grad.data.zero_()
@@ -66,8 +67,10 @@ class DeepFool(Attacker):
             out = model(temp)
             py = out.max(1)[1].item()
             i_iter += 1
-            print('py', py)
-            print('ny', ny)
+            #print('py', py)
+            #print('ny', ny)
+            if i_iter+1 == self.max_iter:
+                print('failed to converge')
         
         x_adv = nx + eta
         x_adv.clamp_(self.clip_min, self.clip_max)
@@ -86,43 +89,68 @@ device = 'cuda'
 train_data, test_data, in_channels, num_classes = load_dataset('mnist')
 test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
     
-attacker = DeepFool(max_iter=1000, clip_max=1, clip_min=0)
+attacker = DeepFool(max_iter=4, clip_max=1, clip_min=0)
 
 n, acc = 0, 0
 for i, (img, label) in enumerate(test_loader):
-    if i == 10:
-        break
-    else:
+#    print('attacking', i)
+#    if i == 10000:
+#        break
+#    else:
+#        img_real = Variable(img.to(device))
+#        #print(img_real)
+#        y_true = Variable(label.to(device))
+#        img_fake = attacker.generate(f, img_real, y_true, device)
+#        #img_fake = img_fake+0.5
+#        #print(img_fake)
+#        y_pred = f(img_fake)
+#        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+#        n += img.size(0)
+        
+    if (i >= 9984) and (i<9994):
+        path = 'images/deepfool'
+        print('attacking image ', i)
         img_real = Variable(img.to(device))
-        #print(img_real)
         y_true = Variable(label.to(device))
         img_fake = attacker.generate(f, img_real, y_true, device)
-        #img_fake = img_fake+0.5
-        #print(img_fake)
-        y_pred = f(img_fake)
-        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
-        n += img.size(0)
+        img_real = img_real.cpu()
+        img_real = img_real.data.squeeze().numpy()
+        real_img = img_real*255 # restore to [0,255]
+        real_img = real_img.astype(np.int16) # set data type
+        if i == 9993:
+            cv2.imwrite(os.path.join(path, '0.png'), real_img)
+        else:
+            cv2.imwrite(os.path.join(path, '%d.png'%(i-9983)), real_img)
+            
+        img_fake = img_fake.cpu()
+        img_fake = img_fake.data.squeeze().numpy()
+        fake_img = img_fake*255 # restore to [0,255]
+        #fake_img = fake_img.astype(np.int16) # set data type
+        if i == 9993:
+            cv2.imwrite(os.path.join(path,'0_adv.png'), fake_img)
+        else:
+            cv2.imwrite(os.path.join(path,'%d_adv.png'%(i-9983)), fake_img)
         
 print(n)
 print(acc) 
        
-img_real = img_real.cpu()
-img_real = img_real.data.squeeze().numpy()
-plt.figure(figsize=(2,2))
-plt.imshow(img_real[:,:], cmap = 'gray')
-plt.title('Real image: digit %d'%(label))
-plt.show()   
-print('y_true: %d'%(y_true))
-
-img_fake = img_fake.cpu()
-adversarial_img = img_fake.data.squeeze().numpy()
-label = label.cpu()
-label = label.data.squeeze().numpy()
-plt.figure(figsize=(2,2))
-plt.imshow(adversarial_img[:,:],vmin=0, vmax=1, cmap = 'gray')
-plt.title('Real image: digit %d'%(label))
-plt.show()    
-print('y_pred: %d,'%(torch.max(y_pred, 1)[1]))
-path = 'images/cw'
-print('accuracy: ', acc/n)
+#img_real = img_real.cpu()
+#img_real = img_real.data.squeeze().numpy()
+#plt.figure(figsize=(2,2))
+#plt.imshow(img_real[:,:], cmap = 'gray')
+#plt.title('Real image: digit %d'%(label))
+#plt.show()   
+#print('y_true: %d'%(y_true))
+#
+#img_fake = img_fake.cpu()
+#adversarial_img = img_fake.data.squeeze().numpy()
+#label = label.cpu()
+#label = label.data.squeeze().numpy()
+#plt.figure(figsize=(2,2))
+#plt.imshow(adversarial_img[:,:],vmin=0, vmax=1, cmap = 'gray')
+#plt.title('Real image: digit %d'%(label))
+#plt.show()    
+#print('y_pred: %d,'%(torch.max(y_pred, 1)[1]))
+#path = 'images/cw'
+#print('accuracy: ', acc/n)
     

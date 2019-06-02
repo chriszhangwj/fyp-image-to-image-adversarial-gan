@@ -9,7 +9,7 @@ from discriminators import Discriminator_ACGAN, Discriminator_ACGAN2
 from prepare_dataset import load_dataset
 from train_function import train_baseline_ACGAN
 from test_function import test_perlin
-from utils import tile_evolution, plot_pert
+from utils import tile_evolution, plot_pert, tile_evolution_20
 
 import numpy as np
 import argparse
@@ -29,7 +29,6 @@ def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
     return torch.sum(torch.max(real-other, kappa))
 
 if __name__ == '__main__':
-    
     parser = argparse.ArgumentParser(description='Train AdvGAN')
     parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--epochs', type=int, default=15, required=False, help='no. of epochs (default: 30)')
@@ -52,14 +51,14 @@ if __name__ == '__main__':
 
     dataset_name = 'mnist'
     model = 'Model_C'
-    lr = 0.01 # original 0.001
+    lr = 0.001 # original 0.001
     epochs = 20
 
     print('Training AdvGAN (Untargeted)')
 
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=num_workers)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=128, shuffle=False, num_workers=num_workers)
     
     #D = Discriminator_ACGAN()
     D = Discriminator_ACGAN2()
@@ -76,8 +75,8 @@ if __name__ == '__main__':
         G.cuda()
         f.cuda()
 
-    optimizer_G = optim.Adam(G.parameters(), lr=lr)
-    optimizer_D = optim.Adam(D.parameters(), lr=lr/5)
+    optimizer_G = optim.Adam(G.parameters(), lr=lr/10)
+    optimizer_D = optim.Adam(D.parameters(), lr=lr/10)
 
     scheduler_G = StepLR(optimizer_G, step_size=10, gamma=0.5)
     scheduler_D = StepLR(optimizer_D, step_size=10, gamma=0.5)
@@ -87,7 +86,7 @@ if __name__ == '__main__':
     criterion_aux = nn.CrossEntropyLoss() # for aux classifier, note that we do not use NLL loss
     alpha = 5 # gan loss multiplication factor
     beta = 10 # for hinge loss
-    gamma = 0.0 # for aux loss
+    gamma = 0.00 # for aux loss
     num_steps = 300 # number of generator updates for 1 discriminator update
     M = 0 # magnitude of perlin noise on a scale of 255
 
@@ -135,7 +134,7 @@ if __name__ == '__main__':
     # plot training curve
     fig, ax = plt.subplots()    
     ax.plot(loss_adv_epoch, label='loss_adv')
-    ax.plot(loss_gan_epoch, label='loss_gan')
+    ax.plot(loss_gan_epoch, label='loss_g')
     ax.plot(loss_hinge_epoch, label='loss_pert')
     ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
     ax.set_axisbelow(True)
@@ -143,22 +142,21 @@ if __name__ == '__main__':
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
     plt.legend(loc='upper right')
-    plt.ylim((0,20))
+    plt.ylim((0,30))
     plt.show()
     
     fig, ax = plt.subplots()    
-    ax.plot(loss_gan_epoch, label='loss_gan')
+    ax.plot(loss_gan_epoch, label='loss_g')
     ax.plot(loss_d_epoch, label='loss_d')
     ax.set(xlabel='Steps (Number of batches)', ylabel='Magnitude',title='Loss evolution')
     ax.set_axisbelow(True)
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,1))
+    plt.ylim((0,1.5))
     plt.legend(loc='upper right')
     plt.show()
     
-        
     fig, ax = plt.subplots()    
     ax.plot(loss_real_epoch, label='loss_real')
     ax.plot(loss_fake_epoch, label='loss_fake')
@@ -172,6 +170,4 @@ if __name__ == '__main__':
     plt.show()
     
     tile_evolution()
-    plot_pert()
-    
-    
+    tile_evolution_20()

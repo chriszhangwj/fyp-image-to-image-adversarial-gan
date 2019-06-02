@@ -21,8 +21,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
-    # inputs to the softmax function are called logits.
-    # https://arxiv.org/pdf/1608.04644.pdf
+
     target_one_hot = torch.eye(num_classes).type(logits.type())[target.long()] # one hot vector for the target label
     real = torch.sum(target_one_hot*logits, 1) # element-wise multiplication by *
     other = torch.max((1-target_one_hot)*logits - (target_one_hot*10000), 1)[0]

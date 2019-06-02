@@ -173,6 +173,27 @@ def tile_evolution():
     plt.axis('off')
     plt.show()    
     
+def tile_evolution_20():
+    arr = np.zeros((28*10, 28*21), dtype=np.uint8)
+    for i in range(10):
+        path = 'images/train_evolution/%d/'%(i)
+        images = os.listdir(path)
+        images.sort()
+            
+        for j in range(21): # loop epochs
+            img_fake = '%d_epoch_%d.png'%(i,j)
+            img_path = os.path.join(path, img_fake)
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+            a = int(img_fake.split('_')[0]) # split string and obtain key word
+            b = int(img_fake.split('_')[2].split('.')[0])
+            arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
+            
+            
+    plt.figure(figsize=(14,14))
+    plt.imshow(arr, cmap = 'gray')
+    plt.axis('off')
+    plt.show()       
+    
 def plot_pert():
     arr = np.zeros((28*3, 28*10), dtype=np.int16)
     for i in range(10):
@@ -316,7 +337,7 @@ def plot_pert_cw():
             
     plt.figure(figsize=(20,3))
     ax = plt.gca()
-    im = ax.imshow(arr)
+    im = ax.imshow(arr,cmap='gray')
     plt.axis('off')
     plt.colorbar(im)
     plt.show()   

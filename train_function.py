@@ -408,7 +408,6 @@ def train_perlin(G, D, f, M, criterion_adv, criterion_gan, alpha, beta, train_lo
     return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist
 
 
-
 def train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, alpha, beta, gamma, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
     n = 0
     acc = 0 # attack success rate
@@ -449,10 +448,10 @@ def train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, a
         
         loss_hinge_2 = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1)))
 
-        loss_hinge = 0.1 * loss_hinge_1 + 0.9 * loss_hinge_2
+        loss_hinge = 0.2 * loss_hinge_1 + 0.8 * loss_hinge_2
         
         # total generator loss
-        loss_g = 0.1*loss_adv + alpha*loss_gan + beta*loss_hinge            
+        loss_g = 0.2 * loss_adv + alpha*loss_gan + beta*loss_hinge            
         
         # total generator loss
         #loss_g = 0.1*loss_adv + alpha*loss_gan + beta*loss_hinge      
@@ -461,7 +460,7 @@ def train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, a
         optimizer_D.zero_grad()
         
         if i % num_steps == 0:
-            print('update D')
+            #print('update D')
             # Train the Discriminator
             #loss_real = criterion_gan(D(img_real), valid*0.9) #label-smoothing
             #loss_real = criterion_gan(D(img_real), valid*0.5)
@@ -469,10 +468,10 @@ def train_baseline_ACGAN(G, D, f, criterion_adv, criterion_gan, criterion_aux, a
             
             x1_real, _ = D(img_real)
             x1_fake, x2_fake = D(img_fake.detach())
-            loss_real = criterion_gan(x1_real, valid*0.5)
+            loss_real = criterion_gan(x1_real, valid*0.6)
             loss_fake = criterion_gan(x1_fake, fake)
             loss_aux = criterion_aux(x2_fake, y_true)
-            loss_d = loss_real + loss_fake + gamma * loss_aux
+            loss_d = 0.5*loss_real + 0.5*loss_fake + gamma * loss_aux
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 
@@ -586,7 +585,7 @@ def train_baseline_atnet(G, D, f, A, criterion_adv, criterion_gan, criterion_aux
             loss_real = criterion_gan(x1_real, valid*0.5)
             loss_fake = criterion_gan(x1_fake, fake)
             loss_aux = criterion_aux(x2_fake, y_true)
-            loss_d = loss_real + loss_fake + gamma * loss_aux
+            loss_d = 0.5*loss_real + 0.5*loss_fake + gamma * loss_aux
             loss_d.backward(torch.ones_like(loss_d))
             optimizer_D.step()
 

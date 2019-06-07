@@ -114,6 +114,8 @@ if __name__ == '__main__':
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    print(len(train_loader))
+    print(len(test_loader))
 
     # load model
     model = getattr(target_models, model_name)(in_channels, num_classes)

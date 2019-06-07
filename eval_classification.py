@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import os
 from generators import Generator_MNIST as Generator
-from utils import cw_l2
+from utils import cw_l2, Attacker, DeepFool
 import target_models
 
 def tile_evolution_pred(digit=0):
@@ -279,6 +279,88 @@ def tile_evolution_pred(digit=0):
 
 # cw generation
 # load target model
+#model_name='Model_C'
+#f = getattr(target_models, model_name)(1, 10)
+#checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist_temp.pth.tar'%(model_name))
+#checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
+#f.load_state_dict(checkpoint_f["state_dict"])
+#f.eval()
+#f.cuda()
+#
+#images = os.listdir('images/mnist_test_png/')
+#images.sort()
+#for i, image in enumerate(images):
+#    print(i)
+#    if i==80:
+#        break
+#    else:
+#        img_path = os.path.join('images/mnist_test_png/', image)
+#        orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+#        img = orig.copy().astype(np.float32)
+#        img = torch.from_numpy(img)
+#        img = torch.unsqueeze(img,0)/255.0
+#        img = torch.unsqueeze(img,0)
+#        label= int((image.split('-')[1].split('.')[0])[3]) # extract label
+#        #print(label)
+#        #label = np.int8(label)
+#        label = torch.LongTensor(1, 1).fill_(label)
+#        #print(label)
+#        #print(type(label))
+#        img_fake = cw_l2(f, img, label, kappa=0, c=2, max_iter=1000)
+#        #print(img_fake.size())
+#        img_fake = img_fake.cpu()
+#        img_fake = img_fake.data.detach().numpy()
+#        img_fake = img_fake*255
+#        img_fake = img_fake.squeeze()
+#        img_fake = img_fake.squeeze()
+#        #img_fake = img_fake.astype(np.int16)
+#        #print(type(img_fake))
+#        #print(np.shape(img_fake))
+#        cv2.imwrite('images/mnist_test_cw_adv/%d.png'%(i) ,img_fake)
+
+# deepfool generation
+#device = 'cuda'
+#model_name='Model_C'
+#f = getattr(target_models, model_name)(1, 10)
+#checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
+#checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
+#f.load_state_dict(checkpoint_f["state_dict"])
+#f.eval()
+#f.cuda()
+#attacker = DeepFool(max_iter=4, clip_max=1, clip_min=0)
+#images = os.listdir('images/mnist_test_png/')
+#images.sort()
+#for i, image in enumerate(images):
+#    print(i)
+#    if i==10000:
+#        break
+#    else:
+#        img_path = os.path.join('images/mnist_test_png/', image)
+#        orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+#        img = orig.copy().astype(np.float32)
+#        img = torch.from_numpy(img)
+#        img = torch.unsqueeze(img,0)/255.0
+#        img = torch.unsqueeze(img,0)
+#        label= int((image.split('-')[1].split('.')[0])[3]) # extract label
+#        #print(label)
+#        #label = np.int8(label)
+#        label = torch.LongTensor(1, 1).fill_(label)
+#        #print(label)
+#        #print(type(label))
+#        img_fake = attacker.generate(f, img, label, device)
+#        #print(img_fake.size())
+#        img_fake = img_fake.cpu()
+#        img_fake = img_fake.data.detach().numpy()
+#        img_fake = img_fake*255
+#        img_fake = img_fake.squeeze()
+#        img_fake = img_fake.squeeze()
+#        #img_fake = img_fake.astype(np.int16)
+#        #print(type(img_fake))
+#        #print(np.shape(img_fake))
+#        cv2.imwrite('images/mnist_test_df_adv/%d.png'%(i) ,img_fake)
+        
+# fgsm generation
+device = 'cuda'
 model_name='Model_C'
 f = getattr(target_models, model_name)(1, 10)
 checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
@@ -286,7 +368,9 @@ checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
 f.load_state_dict(checkpoint_f["state_dict"])
 f.eval()
 f.cuda()
-
+eps=0.5
+criterion = nn.CrossEntropyLoss()
+attacker = DeepFool(max_iter=4, clip_max=1, clip_min=0)
 images = os.listdir('images/mnist_test_png/')
 images.sort()
 for i, image in enumerate(images):
@@ -300,21 +384,17 @@ for i, image in enumerate(images):
         img = torch.from_numpy(img)
         img = torch.unsqueeze(img,0)/255.0
         img = torch.unsqueeze(img,0)
+        inp = Variable(img.to(device).float(), requires_grad=True)
+        out = f(inp)
         label= int((image.split('-')[1].split('.')[0])[3]) # extract label
-        #print(label)
-        #label = np.int8(label)
         label = torch.LongTensor(1, 1).fill_(label)
-        #print(label)
-        #print(type(label))
-        img_fake = cw_l2(f, img, label, kappa=0, c=4, max_iter=200)
-        #print(img_fake.size())
+        loss = criterion(out, Variable(torch.Tensor([float(label)]).to(device).long()))
+        loss.backward()
+        img_fake = inp.data + (eps * torch.sign(inp.grad.data))
+        img_fake = img_fake.clamp(min=-1, max=1)
         img_fake = img_fake.cpu()
         img_fake = img_fake.data.detach().numpy()
         img_fake = img_fake*255
         img_fake = img_fake.squeeze()
         img_fake = img_fake.squeeze()
-        img_fake = img_fake.astype(np.int16)
-        #print(type(img_fake))
-        #print(np.shape(img_fake))
-        cv2.imwrite('images/mnist_test_cw_adv/%d.png'%(i) ,img_fake)
-
+        cv2.imwrite('images/mnist_test_fgsm_adv/%d.png'%(i) ,img_fake)

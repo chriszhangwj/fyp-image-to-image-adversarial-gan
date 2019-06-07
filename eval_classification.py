@@ -152,44 +152,44 @@ def tile_evolution_pred(digit=0):
 #    
 # generate adversaries for random images from test set - CW--------------------------------------------
 # load target model
-model_name = 'Model_C'
-f = getattr(target_models, model_name)(1, 10)
-checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name)) # do not use the temp version
-checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
-f.load_state_dict(checkpoint_f["state_dict"])
-f.eval()
-f.cuda()
-images = os.listdir('images/random_test/group3/')
-#label = torch.tensor([0,7,2,6,5,5,8,9,3,6,4]) # group 1
-#label = torch.tensor([5,5,9,2,6,5,8,8,9,8,4]) # group 2
-label = torch.tensor([1,5,4,8,6,6,5,7,7,4,2]) # group 3
-images.sort()
-fig = plt.figure(figsize=(50,50))
-m = nn.Softmax()
-for i, image in enumerate(images):
-    print(image)
-    img_path = os.path.join('images/random_test/group3/', image) 
-    orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    img = orig.copy().astype(np.float32)
-    img = torch.from_numpy(img)
-    img = torch.unsqueeze(img,0)/255.0
-    img = torch.unsqueeze(img,0)
-    img_fake = cw_l2(f, img, label[i], kappa=0, c=4, max_iter=150)
-    y_pred = f(img_fake) # obtain logits
-    y_prob = m(y_pred)
-    y_pred_label = torch.max(y_pred, 1)[1] # obtain predicted label
-    y_pred_prob = y_prob[0][y_pred_label]
-    fig.add_subplot(1,11,i+1)
-    img_fake = img_fake.clamp(min=0, max=1) # use the pre-trained G to produce perturbation
-    img_fake = torch.squeeze(img_fake,0)
-    img_fake = torch.squeeze(img_fake,0)
-    img_fake = img_fake.cpu().detach().numpy()
-    img_fake = img_fake * 255.0
-    img_fake = img_fake.astype(np.int16)
-    plt.imshow(img_fake, cmap='gray')
-    plt.axis('off')
-    plt.tight_layout()
-    plt.title('Pred: %d \n Conf: %.1f%%'%(y_pred_label, y_pred_prob*100), fontsize=30) 
+#model_name = 'Model_C'
+#f = getattr(target_models, model_name)(1, 10)
+#checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name)) # do not use the temp version
+#checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
+#f.load_state_dict(checkpoint_f["state_dict"])
+#f.eval()
+#f.cuda()
+#images = os.listdir('images/random_test/group3/')
+##label = torch.tensor([0,7,2,6,5,5,8,9,3,6,4]) # group 1
+##label = torch.tensor([5,5,9,2,6,5,8,8,9,8,4]) # group 2
+#label = torch.tensor([1,5,4,8,6,6,5,7,7,4,2]) # group 3
+#images.sort()
+#fig = plt.figure(figsize=(50,50))
+#m = nn.Softmax()
+#for i, image in enumerate(images):
+#    print(image)
+#    img_path = os.path.join('images/random_test/group3/', image) 
+#    orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+#    img = orig.copy().astype(np.float32)
+#    img = torch.from_numpy(img)
+#    img = torch.unsqueeze(img,0)/255.0
+#    img = torch.unsqueeze(img,0)
+#    img_fake = cw_l2(f, img, label[i], kappa=0, c=4, max_iter=150)
+#    y_pred = f(img_fake) # obtain logits
+#    y_prob = m(y_pred)
+#    y_pred_label = torch.max(y_pred, 1)[1] # obtain predicted label
+#    y_pred_prob = y_prob[0][y_pred_label]
+#    fig.add_subplot(1,11,i+1)
+#    img_fake = img_fake.clamp(min=0, max=1) # use the pre-trained G to produce perturbation
+#    img_fake = torch.squeeze(img_fake,0)
+#    img_fake = torch.squeeze(img_fake,0)
+#    img_fake = img_fake.cpu().detach().numpy()
+#    img_fake = img_fake * 255.0
+#    img_fake = img_fake.astype(np.int16)
+#    plt.imshow(img_fake, cmap='gray')
+#    plt.axis('off')
+#    plt.tight_layout()
+#    plt.title('Pred: %d \n Conf: %.1f%%'%(y_pred_label, y_pred_prob*100), fontsize=30) 
 
 
     
@@ -276,3 +276,45 @@ for i, image in enumerate(images):
 #    img = img.squeeze()
 #    cv2.imwrite('images/mnist_test_advgan_adv/%d.png'%(i) ,img_fake)
 #   
+
+# cw generation
+# load target model
+model_name='Model_C'
+f = getattr(target_models, model_name)(1, 10)
+checkpoint_path_f = os.path.join('saved', 'target_models', 'best_%s_mnist.pth.tar'%(model_name))
+checkpoint_f = torch.load(checkpoint_path_f, map_location='cpu')
+f.load_state_dict(checkpoint_f["state_dict"])
+f.eval()
+f.cuda()
+
+images = os.listdir('images/mnist_test_png/')
+images.sort()
+for i, image in enumerate(images):
+    print(i)
+    if i==1000:
+        break
+    else:
+        img_path = os.path.join('images/mnist_test_png/', image)
+        orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img = orig.copy().astype(np.float32)
+        img = torch.from_numpy(img)
+        img = torch.unsqueeze(img,0)/255.0
+        img = torch.unsqueeze(img,0)
+        label= int((image.split('-')[1].split('.')[0])[3]) # extract label
+        #print(label)
+        #label = np.int8(label)
+        label = torch.LongTensor(1, 1).fill_(label)
+        #print(label)
+        #print(type(label))
+        img_fake = cw_l2(f, img, label, kappa=0, c=4, max_iter=200)
+        #print(img_fake.size())
+        img_fake = img_fake.cpu()
+        img_fake = img_fake.data.detach().numpy()
+        img_fake = img_fake*255
+        img_fake = img_fake.squeeze()
+        img_fake = img_fake.squeeze()
+        img_fake = img_fake.astype(np.int16)
+        #print(type(img_fake))
+        #print(np.shape(img_fake))
+        cv2.imwrite('images/mnist_test_cw_adv/%d.png'%(i) ,img_fake)
+

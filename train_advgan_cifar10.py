@@ -6,12 +6,14 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import StepLR
 
 import target_models
+import resnet
 import torch.optim as optim
-from generators import Generator_MNIST as Generator
-from discriminators import Discriminator_MNIST as Discriminator
+from generators import Generator_CIFAR10 as Generator
+from discriminators import Discriminator_CIFAR10 as Discriminator
 from prepare_dataset import load_dataset
-from train_function import train, train_plot
-from test_function import test
+from train_function import train, train_plot, train_plot_cifar10
+from test_function import test_cifar10
+from resnet import ResNet18
 
 import cv2
 import numpy as np
@@ -39,7 +41,6 @@ def CWLoss(logits, target, is_targeted, num_classes=10, kappa=0):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Train AdvGAN')
-    parser.add_argument('--model', type=str, default="Model_C", required=False, choices=["Model_A", "Model_B", "Model_C"], help='model name (default: Model_C)')
     parser.add_argument('--epochs', type=int, default=15, required=False, help='no. of epochs (default: 30)')
     parser.add_argument('--batch_size', type=int, default=128, required=False, help='batch size (default: 128)')
     parser.add_argument('--lr', type=float, default=0.001, required=False, help='learning rate (default: 0.001)')
@@ -53,43 +54,40 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     num_workers = args.num_workers
     epochs = args.epochs
-    model_name = args.model
     target = args.target
     thres = args.thres # thres is hard-coded below, change it
     gpu = args.gpu
 
-    dataset_name = 'mnist' # Only MNIST implemented for now
+    dataset_name = 'cifar10'
 
     # alternatively set parameters here
     target = -1
-    model = 'Model_C'
     lr = 0.001 # original 0.001
-    epochs = 15
-    #epochs=1
+    epochs = 20
     
     is_targeted = False
     if target in range(0, 10):
         is_targeted = True # bool variable to indicate targeted or untargeted attack
 
     print('Training AdvGAN ', '(Target %d)'%(target) if is_targeted else '(Untargeted)')
-
+    
     train_data, test_data, in_channels, num_classes = load_dataset(dataset_name)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
+    
     D = Discriminator()
     G = Generator()
-    f = getattr(target_models, model_name)(in_channels, num_classes)
+    net = ResNet18()
 
-    checkpoint_path = os.path.join('saved', 'target_models', 'best_%s_mnist_temp.pth.tar'%(model_name))
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
-    f.load_state_dict(checkpoint["state_dict"])
-    f.eval()
+    checkpoint_path = os.path.join('saved', 'cifar10', 'target_models', 'best_cifar10.pth.tar')
+    checkpoint = torch.load(checkpoint_path)
+    net.load_state_dict(checkpoint['state_dict'])
+    net.eval()
 
     if gpu:
         D.cuda()
         G.cuda()
-        f.cuda()
+        net.cuda()
 
     optimizer_G = optim.Adam(G.parameters(), lr=lr)
     optimizer_D = optim.Adam(D.parameters(), lr=lr)
@@ -99,10 +97,10 @@ if __name__ == '__main__':
 
     criterion_adv =  CWLoss # loss for fooling target model
     criterion_gan = nn.MSELoss() # for gan loss
-    alpha = 1 # gan loss multiplication factor
-    beta = 1 # for hinge loss
-    num_steps = 3 # number of generator updates for 1 discriminator update
-    thres = c = 0.2 # perturbation bound, used in loss_hinge
+    alpha = 30 # gan loss multiplication factor
+    beta = 15 # for hinge loss
+    num_steps = 50 # number of generator updates for 1 discriminator update
+    thres = c = 0.1 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
     loss_adv_epoch = np.array([]).reshape(0,1)
@@ -112,8 +110,8 @@ if __name__ == '__main__':
     loss_d_epoch = np.array([]).reshape(0,1)
 
     for epoch in range(epochs):
-        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist = train_plot(G, D, f, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
-        acc_test, _ = test(G, f, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
+        acc_train, loss_adv_hist, loss_gan_hist, loss_hinge_hist, loss_g_hist, loss_d_hist = train_plot_cifar10(G, D, net, target, is_targeted, thres, criterion_adv, criterion_gan, alpha, beta, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps, verbose=True)
+        acc_test, _ = test_cifar10(G, net, target, is_targeted, thres, test_loader, epoch, epochs, device, verbose=True)
         
         loss_adv_epoch=np.vstack([loss_adv_epoch, loss_adv_hist])
         loss_gan_epoch=np.vstack([loss_gan_epoch, loss_gan_hist])
@@ -138,7 +136,7 @@ if __name__ == '__main__':
                     "state_dict": G.state_dict(),
                     "acc_test": acc_test,
                     "optimizer": optimizer_G.state_dict()
-                    }, "saved/advgan/advgan_%s_%s.pth.tar"%(model_name, 'target_%d'%(target) if is_targeted else 'untargeted'))
+                    }, "saved/cifar10/advgan/advgan.pth.tar")
     
     # plot training curve
     fig, ax = plt.subplots()    
@@ -150,7 +148,7 @@ if __name__ == '__main__':
     ax.minorticks_on()
     ax.grid(which='major',linestyle='-')
     ax.grid(which='minor',linestyle=':')
-    plt.ylim((0,30))
+    plt.ylim((0,100))
     plt.legend(loc='upper right')
     plt.show()
     

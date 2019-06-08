@@ -40,26 +40,26 @@ class Generator_MNIST(nn.Module):
     def __init__(self):
         super(Generator_MNIST, self).__init__()
 
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1)
-        self.in1 = nn.InstanceNorm2d(16)
+        self.conv1 = nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1)
+        self.in1 = nn.InstanceNorm2d(8)
 
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1)
-        self.in2 = nn.InstanceNorm2d(32)
+        self.conv2 = nn.Conv2d(8, 16, kernel_size=3, stride=2, padding=1)
+        self.in2 = nn.InstanceNorm2d(16)
 
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
-        self.in3 = nn.InstanceNorm2d(64)
+        self.conv3 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1)
+        self.in3 = nn.InstanceNorm2d(32)
 
-        self.resblock1 = ResidualBlock(64)
-        self.resblock2 = ResidualBlock(64)
-        self.resblock3 = ResidualBlock(64)
-        self.resblock4 = ResidualBlock(64)
+        self.resblock1 = ResidualBlock(32)
+        self.resblock2 = ResidualBlock(32)
+        self.resblock3 = ResidualBlock(32)
+        self.resblock4 = ResidualBlock(32)
 
-        self.up1 = UpsampleConvLayer(64, 32, kernel_size=3, stride=1, upsample=2)
-        self.in4 = nn.InstanceNorm2d(32)
-        self.up2 = UpsampleConvLayer(32, 16, kernel_size=3, stride=1, upsample=2)
-        self.in5 = nn.InstanceNorm2d(16)
+        self.up1 = UpsampleConvLayer(32, 16, kernel_size=3, stride=1, upsample=2)
+        self.in4 = nn.InstanceNorm2d(16)
+        self.up2 = UpsampleConvLayer(16, 8, kernel_size=3, stride=1, upsample=2)
+        self.in5 = nn.InstanceNorm2d(8)
 
-        self.conv4 = nn.Conv2d(16, 1, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(8, 1, kernel_size=3, stride=1, padding=1)
         self.in6 = nn.InstanceNorm2d(1) # originally self.in6 = nn.InstanceNorm2d(8) but we think it's a mistake
 
 
@@ -95,7 +95,6 @@ class Generator_MNIST2(nn.Module):
         self.resblock2 = ResidualBlock(64)
         self.resblock3 = ResidualBlock(64)
         self.resblock4 = ResidualBlock(64)
-        self.resblock3 = ResidualBlock(64)
 
         self.up1 = UpsampleConvLayer(64, 32, kernel_size=3, stride=1, upsample=2)
         self.in4 = nn.InstanceNorm2d(32)
@@ -107,7 +106,6 @@ class Generator_MNIST2(nn.Module):
 
 
     def forward(self, x):
-
         x = F.relu(self.in1(self.conv1(x)))
         x = F.relu(self.in2(self.conv2(x)))
         x = F.relu(self.in3(self.conv3(x)))
@@ -120,7 +118,47 @@ class Generator_MNIST2(nn.Module):
         x = self.conv4(x) # remove relu for better performance and when input is [-1 1]
         return x
     
-    
+class Generator_CIFAR10(nn.Module):
+    def __init__(self):
+        super(Generator_CIFAR10, self).__init__()
+
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
+        self.in1 = nn.InstanceNorm2d(16)
+
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1)
+        self.in2 = nn.InstanceNorm2d(32)
+
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
+        self.in3 = nn.InstanceNorm2d(32)
+
+        self.resblock1 = ResidualBlock(64)
+        self.resblock2 = ResidualBlock(64)
+        self.resblock3 = ResidualBlock(64)
+        self.resblock4 = ResidualBlock(64)
+
+        self.up1 = UpsampleConvLayer(64, 32, kernel_size=3, stride=1, upsample=2)
+        self.in4 = nn.InstanceNorm2d(32)
+        self.up2 = UpsampleConvLayer(32, 16, kernel_size=3, stride=1, upsample=2)
+        self.in5 = nn.InstanceNorm2d(16)
+
+        self.conv4 = nn.Conv2d(16, 3, kernel_size=3, stride=1, padding=1)
+        self.in6 = nn.InstanceNorm2d(3) # originally self.in6 = nn.InstanceNorm2d(8) but we think it's a mistake
+
+
+    def forward(self, x):
+
+        x = F.relu(self.in1(self.conv1(x)))
+        x = F.relu(self.in2(self.conv2(x)))
+        x = F.relu(self.in3(self.conv3(x)))
+        x = self.resblock1(x)
+        x = self.resblock2(x)
+        x = self.resblock3(x)
+        x = self.resblock4(x)
+        x = self.in4(self.up1(x))
+        x = self.in5(self.up2(x))
+
+        x = self.conv4(x) # remove relu for better performance and when input is [-1 1]
+        return x
     
 class UnetGenerator(nn.Module):
     """Create a Unet-based generator"""

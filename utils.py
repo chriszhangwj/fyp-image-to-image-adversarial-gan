@@ -40,16 +40,6 @@ def tsne_plot(data, label, dim=2):
 #tsne_plot(feature_vec,label_vec,dim=2)
 
 def stitch_images(images, y_img_count, x_img_count, margin = 2):
-    # Define a function that stitches the 28 * 28 numpy arrays
-    # together into a collage.
-    
-    # Example usage:
-    #x_sample = x_validation[0].reshape(28, 28)
-    #adv_x_sample = adv_x[0].reshape(28, 28)
-    #adv_comparison = stitch_images([x_sample, adv_x_sample], 1, 2) # need to append images into a list
-    #plt.imshow(adv_comparison)
-    #plt.show()
-    
     # Dimensions of the images
     img_width = images[0].shape[0]
     img_height = images[0].shape[1]    
@@ -61,10 +51,6 @@ def stitch_images(images, y_img_count, x_img_count, margin = 2):
     for i in range(y_img_count): # 1
         for j in range(x_img_count): # 10
             img = images[i * x_img_count + j]
-            #print(len(img.shape))
-            #print(img.shape)
-            #if len(img.shape) == 2:
-            #    img = np.dstack([img] * 3)
             stitched_images[(img_width+margin)*i:(img_width+margin)*i+img_width, (img_height+margin)*j:(img_height+margin)*j+img_height] = img
     return stitched_images
 
@@ -153,9 +139,9 @@ def tile_results():
     import pdb; pdb.set_trace()
     
 def tile_evolution():
-    arr = np.zeros((28*10, 28*11), dtype=np.uint8)
+    arr = np.zeros((28*10, 28*11), dtype=np.float64)
     for i in range(10):
-        path = 'images/train_evolution/%d/'%(i)
+        path = 'images/cifar10/train_evolution/%d/'%(i)
         images = os.listdir(path)
         images.sort()
             
@@ -167,11 +153,31 @@ def tile_evolution():
             b = int(img_fake.split('_')[2].split('.')[0])
             arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
             
-            
     plt.figure(figsize=(7,7))
     plt.imshow(arr, cmap = 'gray')
     plt.axis('off')
-    plt.show()    
+    plt.show()
+
+def tile_evolution_cifar10():
+    arr = np.zeros((32*10, 32*11, 3), dtype=np.float64)
+    for i in range(10):
+        path = 'images/cifar10/train_evolution/%d/'%(i)
+        images = os.listdir(path)
+        images.sort()
+            
+        for j in range(11): # loop epochs
+            img_fake = '%d_epoch_%d.png'%(i,j)
+            img_path = os.path.join(path, img_fake)
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            img = img/255.0
+            a = int(img_fake.split('_')[0]) # split string and obtain key word
+            b = int(img_fake.split('_')[2].split('.')[0])
+            arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img
+            
+    plt.figure(figsize=(7,7))
+    plt.imshow(arr)
+    plt.axis('off')
+    plt.show()       
     
 def tile_evolution_20():
     arr = np.zeros((28*10, 28*21), dtype=np.uint8)
@@ -282,8 +288,6 @@ def plot_pert_advgan():
     plt.axis('off')
     plt.colorbar(im)
     plt.show()   
-    
-  
     # show un-normalised perturbation map  
     arr = np.zeros((28*1, 28*10), dtype=np.int16)
     for i in range(10):
@@ -341,8 +345,6 @@ def plot_pert_cw():
     plt.axis('off')
     plt.colorbar(im)
     plt.show()   
-    
-  
     # show un-normalised perturbation map  
     arr = np.zeros((28*1, 28*10), dtype=np.int16)
     for i in range(10):
@@ -359,7 +361,6 @@ def plot_pert_cw():
         a = 0
         b = i
         arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
-    
     plt.figure(figsize=(20,1))
     ax = plt.gca()
     im = ax.imshow(arr,cmap='coolwarm')
@@ -372,7 +373,6 @@ def plot_pert_deepfool():
     arr = np.zeros((28*3, 28*10), dtype=np.int16)
     for i in range(10):
         path = 'images/deepfool/'
-        images = os.listdir(path)
         img_real = '%d.png'%(i)
         img_path = os.path.join(path, img_real)
         img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
@@ -419,6 +419,38 @@ def plot_pert_deepfool():
     plt.colorbar(im)
     im.set_clim(-255,255)
     plt.show()  
+    
+def plot_pert_cifar10():
+    arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
+    for i in range(10):
+        path = 'images/cifar10/train_evolution/%d'%(i)
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d_epoch_0.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        print(np.shape(img_real))
+        img_adv = '%d_epoch_10.png'%(i)
+        img_path = os.path.join(path, img_adv)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_real = img_real/255
+        img_fake = img_fake/255
+        
+        a=0
+        b = i
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
+        img_pert = abs(img_fake - img_real)*1
+        a = 1
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
+        a = 2
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
+            
+    plt.figure(figsize=(15,5))
+    ax = plt.gca()
+    ax.imshow(arr)
+    plt.axis('off')
+    plt.show() 
 
 def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
     
@@ -535,3 +567,4 @@ class DeepFool(Attacker):
         x_adv = nx + eta
         x_adv.clamp_(self.clip_min, self.clip_max)
         return x_adv.detach()
+

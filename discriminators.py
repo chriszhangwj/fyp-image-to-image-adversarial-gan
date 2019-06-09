@@ -109,19 +109,19 @@ class Discriminator_ACGAN2(nn.Module): # use LeNet-5 used as auxiliary classifie
 class Discriminator_ACGAN2_CIFAR10(nn.Module): # use LeNet-5 used as auxiliary classifier
 	def __init__(self):
 		super(Discriminator_ACGAN2_CIFAR10, self).__init__()
-		self.conv1 = nn.Conv2d(3, 4, kernel_size=4, stride=2, padding=1)
-		self.conv2 = nn.Conv2d(4, 8, kernel_size=4, stride=2, padding=1)
-		self.conv3 = nn.Conv2d(8, 16, kernel_size=4, stride=2, padding=1)
-		self.fc1 = nn.Linear(3*3*16, 1) # convert fc layer to 1-dim output
-		self.fc2 = nn.Linear(3*3*16, 10)
+		self.conv1 = nn.Conv2d(3, 8, kernel_size=4, stride=2, padding=1)
+		self.conv2 = nn.Conv2d(8, 16, kernel_size=4, stride=2, padding=1)
+		self.conv3 = nn.Conv2d(16, 32, kernel_size=4, stride=2, padding=1)
+		self.fc1 = nn.Linear(4*4*32, 1) # convert fc layer to 1-dim output
+		self.fc2 = nn.Linear(4*4*32, 10)
 		self.dropout = nn.Dropout(0.5)
 		self.softmax = nn.Softmax()
 		self.sigmoid = nn.Sigmoid()
 		self.in2 = nn.InstanceNorm2d(16)
 		self.in3 = nn.InstanceNorm2d(32)
-		self.bn1 = nn.BatchNorm2d(4)
-		self.bn2 = nn.BatchNorm2d(8)
-		self.bn3 = nn.BatchNorm2d(16)
+		self.bn1 = nn.BatchNorm2d(8)
+		self.bn2 = nn.BatchNorm2d(16)
+		self.bn3 = nn.BatchNorm2d(32)
         
 	def forward(self, x):
 		#x = self.noise(x)

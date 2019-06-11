@@ -44,7 +44,7 @@ class Generator_MNIST(nn.Module):
         self.in1 = nn.InstanceNorm2d(16)
 
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1)
-        self.in2 = nn.InstanceNorm2d(64)
+        self.in2 = nn.InstanceNorm2d(32)
 
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
         self.in3 = nn.InstanceNorm2d(64)
@@ -124,29 +124,29 @@ class Generator_MNIST2(nn.Module):
 class Generator_CIFAR10(nn.Module):
     def __init__(self):
         super(Generator_CIFAR10, self).__init__()
+        self.nfilter=64
+        self.conv1 = nn.Conv2d(3, self.nfilter*1, kernel_size=3, stride=1, padding=1)
+        self.in1 = nn.InstanceNorm2d(self.nfilter*1)
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
-        self.in1 = nn.InstanceNorm2d(32)
+        self.conv2 = nn.Conv2d(self.nfilter*1, self.nfilter*2, kernel_size=3, stride=2, padding=1)
+        self.in2 = nn.InstanceNorm2d(self.nfilter*2)
 
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1)
-        self.in2 = nn.InstanceNorm2d(64)
+        self.conv3 = nn.Conv2d(self.nfilter*2, self.nfilter*4, kernel_size=3, stride=2, padding=1)
+        self.in3 = nn.InstanceNorm2d(self.nfilter*4)
 
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1)
-        self.in3 = nn.InstanceNorm2d(256)
+        self.resblock1 = ResidualBlock(self.nfilter*4)
+        self.resblock2 = ResidualBlock(self.nfilter*4)
+        self.resblock3 = ResidualBlock(self.nfilter*4)
+        self.resblock4 = ResidualBlock(self.nfilter*4)
+        self.resblock5 = ResidualBlock(self.nfilter*4)
+        self.resblock6 = ResidualBlock(self.nfilter*4)
 
-        self.resblock1 = ResidualBlock(256)
-        self.resblock2 = ResidualBlock(256)
-        self.resblock3 = ResidualBlock(256)
-        self.resblock4 = ResidualBlock(256)
-        self.resblock4 = ResidualBlock(256)
-        self.resblock4 = ResidualBlock(256)
+        self.up1 = UpsampleConvLayer(self.nfilter*4, self.nfilter*2, kernel_size=3, stride=1, upsample=2)
+        self.in4 = nn.InstanceNorm2d(self.nfilter*2)
+        self.up2 = UpsampleConvLayer(self.nfilter*2, self.nfilter*1, kernel_size=3, stride=1, upsample=2)
+        self.in5 = nn.InstanceNorm2d(self.nfilter*1)
 
-        self.up1 = UpsampleConvLayer(256, 128, kernel_size=3, stride=1, upsample=2)
-        self.in4 = nn.InstanceNorm2d(128)
-        self.up2 = UpsampleConvLayer(128, 64, kernel_size=3, stride=1, upsample=2)
-        self.in5 = nn.InstanceNorm2d(64)
-
-        self.conv4 = nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(self.nfilter*1, 3, kernel_size=3, stride=1, padding=1)
         self.in6 = nn.InstanceNorm2d(3) # originally self.in6 = nn.InstanceNorm2d(8) but we think it's a mistake
 
 
@@ -158,6 +158,8 @@ class Generator_CIFAR10(nn.Module):
         x = self.resblock2(x)
         x = self.resblock3(x)
         x = self.resblock4(x)
+        x = self.resblock5(x)
+        x = self.resblock6(x)
         x = self.in4(self.up1(x))
         x = self.in5(self.up2(x))
 

@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from noise import pnoise2
-from utils import perlin, toZeroThreshold
+from utils import toZeroThreshold
 from discriminators import Attn
 torch.manual_seed(0)
 #from operator import itemgetter

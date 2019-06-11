@@ -100,7 +100,7 @@ if __name__ == '__main__':
     alpha = 30 # gan loss multiplication factor
     beta = 15 # for hinge loss
     num_steps = 50 # number of generator updates for 1 discriminator update
-    thres = c = 0.1 # perturbation bound, used in loss_hinge
+    thres = 0.09 # perturbation bound, used in loss_hinge
 
     device = 'cuda' if gpu else 'cpu'
     loss_adv_epoch = np.array([]).reshape(0,1)

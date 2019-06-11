@@ -31,13 +31,7 @@ def tsne_plot(data, label, dim=2):
         plt.scatter(tsne_data[indices,0], tsne_data[indices,1], label=cl)
     plt.legend()
     plt.show()
-    return None
 
-#feature_vec = np.genfromtxt("feature_200_mnist.csv", delimiter=',')
-#label_vec = np.genfromtxt("mnist_train_label_numpy.csv", delimiter=',')
-#print(np.shape(feature_vec))
-#print(np.shape(label_vec))
-#tsne_plot(feature_vec,label_vec,dim=2)
 
 def stitch_images(images, y_img_count, x_img_count, margin = 2):
     # Dimensions of the images
@@ -174,7 +168,7 @@ def tile_evolution_cifar10():
             b = int(img_fake.split('_')[2].split('.')[0])
             arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img
             
-    plt.figure(figsize=(7,7))
+    plt.figure(figsize=(8,8))
     plt.imshow(arr)
     plt.axis('off')
     plt.show()       
@@ -254,7 +248,38 @@ def plot_pert():
     im = ax.imshow(arr,cmap='coolwarm')
     plt.axis('off')
     plt.colorbar(im)
-    plt.show()  
+    plt.show()
+    
+def plot_pert_cifar10():
+    arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
+    for i in range(10):
+        path = 'images/cifar10/train_evolution/%d'%(i)
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d_epoch_0.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_adv = '%d_epoch_20.png'%(i)
+        img_path = os.path.join(path, img_adv)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_real = img_real/255
+        img_fake = img_fake/255
+        img_pert = abs(img_fake - img_real)*3
+        
+        a=0
+        b = i
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
+        a = 1
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
+        a = 2
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
+            
+    plt.figure(figsize=(15,5))
+    ax = plt.gca()
+    ax.imshow(arr)
+    plt.axis('off')
+    plt.show() 
     
 def plot_pert_advgan():
     arr = np.zeros((28*3, 28*10), dtype=np.int16)
@@ -312,6 +337,70 @@ def plot_pert_advgan():
     plt.colorbar(im)
     im.set_clim(-255,255)
     plt.show()  
+    
+def plot_pert_advgan_cifar10():
+    arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
+    for i in range(10):
+        path = 'images/cifar10/advgan/'
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_real = img_real/255.0
+        img_fake = img_fake/255.0
+        img_pert = abs(img_fake-img_real)*3
+        
+        a=0
+        b = i
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
+        a=1
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
+        a = 2
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
+            
+    plt.figure(figsize=(15,5))
+    ax = plt.gca()
+    im = ax.imshow(arr)
+    plt.axis('off')
+    plt.show()   
+
+def plot_pert_cw_cifar10():
+    arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
+    for i in range(10):
+        path = 'images/cifar10/cw/'
+        images = os.listdir(path)
+        images.sort()
+        
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_real = img_real/255.0
+        img_fake = img_fake/255.0
+        
+        a=0
+        b = i
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
+        img_pert = abs(img_fake - img_real)
+        a=1
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
+        a = 2
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
+            
+    plt.figure(figsize=(20,3))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='gray')
+    plt.axis('off')
+    plt.show()   
     
 def plot_pert_cw():
     arr = np.zeros((28*3, 28*10), dtype=np.int16)
@@ -420,60 +509,78 @@ def plot_pert_deepfool():
     im.set_clim(-255,255)
     plt.show()  
     
-def plot_pert_cifar10():
+def plot_pert_deepfool_cifar10():
     arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
     for i in range(10):
-        path = 'images/cifar10/train_evolution/%d'%(i)
-        images = os.listdir(path)
-        images.sort()
-        
-        img_real = '%d_epoch_0.png'%(i)
+        path = 'images/cifar10/deepfool/'
+        img_real = '%d.png'%(i)
         img_path = os.path.join(path, img_real)
         img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        print(np.shape(img_real))
-        img_adv = '%d_epoch_10.png'%(i)
-        img_path = os.path.join(path, img_adv)
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
         img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        img_real = img_real/255
-        img_fake = img_fake/255
-        
+        img_real = img_real/255.0
+        img_fake = img_fake/255.0
         a=0
         b = i
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
-        img_pert = abs(img_fake - img_real)*1
-        a = 1
+        img_pert = abs(img_fake - img_real)
+        a=1
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
-        a = 2
-        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
-            
-    plt.figure(figsize=(15,5))
+        a=2
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake     
+    plt.figure(figsize=(20,3))
     ax = plt.gca()
-    ax.imshow(arr)
+    im = ax.imshow(arr)
     plt.axis('off')
-    plt.show() 
-
-def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
+    plt.show()   
+    # show un-normalised perturbation map  
+    arr = np.zeros((28*1, 28*10), dtype=np.int16)
+    for i in range(10):
+        img_real = '%d.png'%(i)
+        img_path = os.path.join(path, img_real)
+        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        
+        img_fake = '%d_adv.png'%(i)
+        img_path = os.path.join(path, img_fake)
+        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        img_real = img_real.astype(np.int16)
+        img_fake = img_fake.astype(np.int16)
+        img_pert = img_fake - img_real # [-255,255]    
+        a = 0
+        b = i
+        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
     
-    # Perlin noise
-    noise = np.empty((size, size), dtype = np.float32)
-    for x in range(size):
-        for y in range(size):
-            noise[x][y] = pnoise2(x / period, y / period, octaves = octave, lacunarity = lacunarity)
-            
-    # Sine function color map
-    noise = normalize(noise)
-    noise = np.sin(noise * freq_sine * np.pi)
-    return normalize(noise)
+    plt.figure(figsize=(20,1))
+    ax = plt.gca()
+    im = ax.imshow(arr,cmap='coolwarm')
+    plt.axis('off')
+    plt.colorbar(im)
+    im.set_clim(-255,255)
+    plt.show()  
 
-def normalize(vec): # Normalize vector
-    vmax = np.amax(vec)
-    vmin  = np.amin(vec)
-    return (vec - vmin) / (vmax - vmin)
+#def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
+#    
+#    # Perlin noise
+#    noise = np.empty((size, size), dtype = np.float32)
+#    for x in range(size):
+#        for y in range(size):
+#            noise[x][y] = pnoise2(x / period, y / period, octaves = octave, lacunarity = lacunarity)
+#            
+#    # Sine function color map
+#    noise = normalize(noise)
+#    noise = np.sin(noise * freq_sine * np.pi)
+#    return normalize(noise)
 
-def colorize(img, color = [1, 1, 1]): # colorize perlin noise for coloured images
-    if img.ndim == 2: # expand to include color channels
-        img = np.expand_dims(img, 2)
-    return (img - 0.5) * color + 0.5 # output pixel range [0, 1]
+#def normalize(vec): # Normalize vector
+#    vmax = np.amax(vec)
+#    vmin  = np.amin(vec)
+#    return (vec - vmin) / (vmax - vmin)
+
+#def colorize(img, color = [1, 1, 1]): # colorize perlin noise for coloured images
+#    if img.ndim == 2: # expand to include color channels
+#        img = np.expand_dims(img, 2)
+#    return (img - 0.5) * color + 0.5 # output pixel range [0, 1]
 
 def toZeroThreshold(x, t=0.5):
     zeros = torch.cuda.FloatTensor(x.shape).fill_(0.0)

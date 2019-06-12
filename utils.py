@@ -11,6 +11,7 @@ from generators import Generator_MNIST as Generator
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from noise import pnoise2
+from mpl_toolkits.mplot3d import Axes3D
 torch.manual_seed(0)
 
 def tsne_plot(data, label, dim=2):
@@ -24,14 +25,31 @@ def tsne_plot(data, label, dim=2):
     
     color_map = label
     
-    plt.figure(figsize=(7,7))
+    fig = plt.figure(figsize=(7,7))
+    ax= fig.add_subplot(111, projection = '3d')
     for cl in range(10):
         indices = np.where(color_map==cl)
         indices = indices[0]
-        plt.scatter(tsne_data[indices,0], tsne_data[indices,1], label=cl)
+        ax.scatter(tsne_data[indices,0], tsne_data[indices,1], tsne_data[indices,2], label=cl)
     plt.legend()
     plt.show()
+    return tsne_data
 
+def tsne_3d(data, label, dim=2):
+    pca = PCA(n_components=10)
+    pca_data = pca.fit_transform(data)
+
+    tsne = TSNE(n_components=dim, perplexity=50, verbose = 1)
+    tsne_data = tsne.fit_transform(pca_data)    
+    color_map = label    
+    fig = plt.figure(figsize=(7,7))
+    ax = fig.add_subplot(111, projection = '3d')
+    for cl in range(10):
+        indices = np.where(color_map==cl)
+        indices = indices[0]
+        ax.scatter(tsne_data[indices,0], tsne_data[indices,1], tsne_data[indices,2], label=cl)
+    plt.legend()
+    plt.show()
 
 def stitch_images(images, y_img_count, x_img_count, margin = 2):
     # Dimensions of the images
@@ -187,8 +205,6 @@ def tile_evolution_20():
             a = int(img_fake.split('_')[0]) # split string and obtain key word
             b = int(img_fake.split('_')[2].split('.')[0])
             arr[a*28: (a+1)*28, b*28: (b+1)*28] = img
-            
-            
     plt.figure(figsize=(14,14))
     plt.imshow(arr, cmap = 'gray')
     plt.axis('off')
@@ -256,30 +272,28 @@ def plot_pert_cifar10():
         path = 'images/cifar10/train_evolution/%d'%(i)
         images = os.listdir(path)
         images.sort()
-        
         img_real = '%d_epoch_0.png'%(i)
         img_path = os.path.join(path, img_real)
         img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        img_adv = '%d_epoch_20.png'%(i)
+        img_adv = '%d_epoch_18.png'%(i)
         img_path = os.path.join(path, img_adv)
         img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        img_real = img_real/255
-        img_fake = img_fake/255
-        img_pert = abs(img_fake - img_real)*3
-        
+        img_real = img_real/255 # [0,1]
+        img_fake = img_fake/255 # [0,1]
+        img_pert = (img_fake - img_real)/2+0.5
         a=0
         b = i
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
         a = 1
-        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert*1
         a = 2
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
-            
     plt.figure(figsize=(15,5))
     ax = plt.gca()
     ax.imshow(arr)
     plt.axis('off')
     plt.show() 
+    return arr
     
 def plot_pert_advgan():
     arr = np.zeros((28*3, 28*10), dtype=np.int16)
@@ -297,14 +311,13 @@ def plot_pert_advgan():
         img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         img_real = img_real.astype(np.int16)
         img_fake = img_fake.astype(np.int16)
-        
         a=0
         b = i
         arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_real
         img_pert = abs(img_fake - img_real)
         a=1
         arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
-        a = 2
+        a=2
         arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_fake
             
     plt.figure(figsize=(20,3))
@@ -354,7 +367,7 @@ def plot_pert_advgan_cifar10():
         img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
         img_real = img_real/255.0
         img_fake = img_fake/255.0
-        img_pert = abs(img_fake-img_real)*3
+        img_pert = (img_fake-img_real)/2 + 0.5
         
         a=0
         b = i
@@ -368,7 +381,7 @@ def plot_pert_advgan_cifar10():
     ax = plt.gca()
     im = ax.imshow(arr)
     plt.axis('off')
-    plt.show()   
+    plt.show()
 
 def plot_pert_cw_cifar10():
     arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
@@ -376,7 +389,6 @@ def plot_pert_cw_cifar10():
         path = 'images/cifar10/cw/'
         images = os.listdir(path)
         images.sort()
-        
         img_real = '%d.png'%(i)
         img_path = os.path.join(path, img_real)
         img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
@@ -386,19 +398,18 @@ def plot_pert_cw_cifar10():
         img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
         img_real = img_real/255.0
         img_fake = img_fake/255.0
-        
+        img_pert = (img_fake - img_real)/2 + 0.5
         a=0
         b = i
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
-        img_pert = abs(img_fake - img_real)
         a=1
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
         a = 2
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
             
-    plt.figure(figsize=(20,3))
+    plt.figure(figsize=(15,5))
     ax = plt.gca()
-    im = ax.imshow(arr,cmap='gray')
+    im = ax.imshow(arr)
     plt.axis('off')
     plt.show()   
     
@@ -507,7 +518,7 @@ def plot_pert_deepfool():
     plt.axis('off')
     plt.colorbar(im)
     im.set_clim(-255,255)
-    plt.show()  
+    plt.show()
     
 def plot_pert_deepfool_cifar10():
     arr = np.zeros((32*3, 32*10, 3), dtype=np.float64)
@@ -521,43 +532,19 @@ def plot_pert_deepfool_cifar10():
         img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
         img_real = img_real/255.0
         img_fake = img_fake/255.0
+        img_pert = (img_fake - img_real)/2 + 0.5
         a=0
         b = i
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
-        img_pert = abs(img_fake - img_real)
         a=1
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_pert
         a=2
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake     
-    plt.figure(figsize=(20,3))
+    plt.figure(figsize=(15,5))
     ax = plt.gca()
     im = ax.imshow(arr)
     plt.axis('off')
     plt.show()   
-    # show un-normalised perturbation map  
-    arr = np.zeros((28*1, 28*10), dtype=np.int16)
-    for i in range(10):
-        img_real = '%d.png'%(i)
-        img_path = os.path.join(path, img_real)
-        img_real = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        
-        img_fake = '%d_adv.png'%(i)
-        img_path = os.path.join(path, img_fake)
-        img_fake = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        img_real = img_real.astype(np.int16)
-        img_fake = img_fake.astype(np.int16)
-        img_pert = img_fake - img_real # [-255,255]    
-        a = 0
-        b = i
-        arr[a*28: (a+1)*28, b*28: (b+1)*28] = img_pert
-    
-    plt.figure(figsize=(20,1))
-    ax = plt.gca()
-    im = ax.imshow(arr,cmap='coolwarm')
-    plt.axis('off')
-    plt.colorbar(im)
-    im.set_clim(-255,255)
-    plt.show()  
 
 #def perlin(size, period, octave, freq_sine, lacunarity = 2): # Perlin noise with sine color map
 #    
@@ -675,3 +662,63 @@ class DeepFool(Attacker):
         x_adv.clamp_(self.clip_min, self.clip_max)
         return x_adv.detach()
 
+class GANLoss(nn.Module):
+    """Define different GAN objectives.
+    The GANLoss class abstracts away the need to create the target label tensor
+    that has the same size as the input.
+    """
+
+    def __init__(self, gan_mode, target_real_label=1.0, target_fake_label=0.0):
+        """ Initialize the GANLoss class.
+        Parameters:
+            gan_mode (str) - - the type of GAN objective. It currently supports vanilla, lsgan, and wgangp.
+            target_real_label (bool) - - label for a real image
+            target_fake_label (bool) - - label of a fake image
+        Note: Do not use sigmoid as the last layer of Discriminator.
+        LSGAN needs no sigmoid. vanilla GANs will handle it with BCEWithLogitsLoss.
+        """
+        super(GANLoss, self).__init__()
+        self.register_buffer('real_label', torch.tensor(target_real_label))
+        self.register_buffer('fake_label', torch.tensor(target_fake_label))
+        self.gan_mode = gan_mode
+        if gan_mode == 'lsgan':
+            self.loss = nn.MSELoss()
+        elif gan_mode == 'vanilla':
+            self.loss = nn.BCEWithLogitsLoss()
+        elif gan_mode in ['wgangp']:
+            self.loss = None
+        else:
+            raise NotImplementedError('gan mode %s not implemented' % gan_mode)
+
+    def get_target_tensor(self, prediction, target_is_real):
+        """Create label tensors with the same size as the input.
+        Parameters:
+            prediction (tensor) - - tpyically the prediction from a discriminator
+            target_is_real (bool) - - if the ground truth label is for real images or fake images
+        Returns:
+            A label tensor filled with ground truth label, and with the size of the input
+        """
+
+        if target_is_real:
+            target_tensor = self.real_label
+        else:
+            target_tensor = self.fake_label
+        return target_tensor.expand_as(prediction)
+
+    def __call__(self, prediction, target_is_real):
+        """Calculate loss given Discriminator's output and grount truth labels.
+        Parameters:
+            prediction (tensor) - - tpyically the prediction output from a discriminator
+            target_is_real (bool) - - if the ground truth label is for real images or fake images
+        Returns:
+            the calculated loss.
+        """
+        if self.gan_mode in ['lsgan', 'vanilla']:
+            target_tensor = self.get_target_tensor(prediction, target_is_real)
+            loss = self.loss(prediction, target_tensor)
+        elif self.gan_mode == 'wgangp':
+            if target_is_real:
+                loss = -prediction.mean()
+            else:
+                loss = prediction.mean()
+        return loss

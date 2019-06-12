@@ -362,8 +362,6 @@ def test_perlin(G, f, M, test_loader, epoch, epochs, device, verbose=True):
 def test_baseline_CIFAR10(G, f, test_loader, epoch, epochs, device, verbose=True):
     n, acc, ssim, psnr = 0, 0, 0, 0
     class_acc = np.zeros((1,10)) # count the number of success for each class
-    
-
     G.eval()
     for i, (img, label) in enumerate(test_loader):
         img_real = Variable(img.to(device))
@@ -540,6 +538,19 @@ def eval_baseline(G, f, M, test_loader, epoch, epochs, device, verbose=True):
     n_pixel = img_real.size(2) * img_real.size(2)
     return acc/n, ssim/n, psnr/n, acc_class, distort_success/(n_success*n_pixel), distort_all/(n*n_pixel) # returns attach success rateclass_accclass_acc
 
+def eval_baseline_cifar10(G, f, test_loader, device, verbose=True):
+    n = 0 
+    acc = 0   
+    for i, (img, label) in enumerate(test_loader):
+        img_real = Variable(img.to(device))
+        img_fake = torch.clamp(G(img_real),min=-1,max=1)
+        y_pred = f(img_fake)
+        y_true = Variable(label.to(device))
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
+        n += img.size(0)
+        print(i)
+    return acc/n
+
 def eval_advgan(G, f, thres, test_loader, epoch, epochs, device, verbose=True):
     n = 0 # count total number of samples
     n_success = 0 # count total number of successful samples
@@ -682,7 +693,6 @@ def eval_advgan_batch_cifar10(G, f, thres, test_loader, device, verbose=True):
         acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item() # when the prediction is wrong
         n += img.size(0)
         print(i)
-
     path = 'images/cifar10/advgan'
     # save real images
     img_real = img_real/2 + 0.5

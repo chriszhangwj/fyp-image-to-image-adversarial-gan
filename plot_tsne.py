@@ -538,7 +538,7 @@ def get_indiv_class(data_loader, attack, device):
         class_num = np.zeros((1,10)) 
         attacker = DeepFool(max_iter=4, clip_max=1, clip_min=0)
         for i, (img, label) in enumerate(data_loader):
-            if i==100000:
+            if i==1000000:
                 break
             else:
                 print('Attack image ',i)
@@ -602,20 +602,21 @@ def get_indiv_class(data_loader, attack, device):
         class_ssim = np.divide(class_ssim,class_num)
         class_psnr = np.divide(class_psnr,class_num)
     return class_l0_dist, class_l1_dist, class_l2_dist, class_linf_dist, class_ssim, class_psnr
-            
+  
+device = 'cuda'          
 train_data, test_data, in_channels, num_classes = load_dataset('mnist')
 test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 #image_vec, label_vec = get_mnist(test_loader)
 #np.savetxt("mnist_test_image_numpy.csv", image_vec, delimiter=",")
 #np.savetxt("mnist_test_label_numpy.csv", label_vec, delimiter=",")
 
-#image_vec = np.genfromtxt("mnist_test_image_numpy.csv", delimiter=',')
-#label_vec = np.genfromtxt("mnist_test_label_numpy.csv", delimiter=',')
+image_vec = np.genfromtxt("mnist_test_image_numpy.csv", delimiter=',')
+label_vec = np.genfromtxt("mnist_test_label_numpy.csv", delimiter=',')
+tsne_data = tsne_plot(image_vec, label_vec, 3)
 
-device = 'cuda'
 # t-SNE plot
 #image_vec, label_vec = get_adv(test_loader,'deepfool', device)
-#tsne_plot(image_vec, label_vec, 2)
+#tsne_plot(image_vec, label_vec, 3)
 
 # algorithm timing
 #get_time(test_loader, 'deepfool', device)
@@ -624,132 +625,132 @@ device = 'cuda'
 #get_distort(test_loader, 'deepfool', device)
 
 # compute class-wise distortion
-l0_advgan, l1_advgan, l2_advgan, linf_advgan, ssim_advgan, psnr_advgan = get_indiv_class(test_loader, 'advgan', device)
-l0_fgsm, l1_fgsm, l2_fgsm, linf_fgsm, ssim_fgsm, psnr_fgsm = get_indiv_class(test_loader, 'fgsm', device)
-l0_ours, l1_ours, l2_ours, linf_ours, ssim_ours, psnr_ours = get_indiv_class(test_loader, 'ours', device)
-l0_cw, l1_cw, l2_cw, linf_cw, ssim_cw, psnr_cw = get_indiv_class(test_loader, 'cw', device)
-l0_df, l1_df, l2_df, linf_df, ssim_df, psnr_df = get_indiv_class(test_loader, 'deepfool', device)
+#l0_advgan, l1_advgan, l2_advgan, linf_advgan, ssim_advgan, psnr_advgan = get_indiv_class(test_loader, 'advgan', device)
+#l0_fgsm, l1_fgsm, l2_fgsm, linf_fgsm, ssim_fgsm, psnr_fgsm = get_indiv_class(test_loader, 'fgsm', device)
+#l0_ours, l1_ours, l2_ours, linf_ours, ssim_ours, psnr_ours = get_indiv_class(test_loader, 'ours', device)
+#l0_cw, l1_cw, l2_cw, linf_cw, ssim_cw, psnr_cw = get_indiv_class(test_loader, 'cw', device)
+#l0_df, l1_df, l2_df, linf_df, ssim_df, psnr_df = get_indiv_class(test_loader, 'deepfool', device)
+##
+###
+#l0_advgan = np.reshape(l0_advgan,(10,1))
+#l0_fgsm = np.reshape(l0_fgsm,(10,1))
+#l0_ours = np.reshape(l0_ours,(10,1))
+#l0_cw = np.reshape(l0_cw,(10,1))
+#l0_df = np.reshape(l0_df,(10,1))
 #
 ##
-l0_advgan = np.reshape(l0_advgan,(10,1))
-l0_fgsm = np.reshape(l0_fgsm,(10,1))
-l0_ours = np.reshape(l0_ours,(10,1))
-l0_cw = np.reshape(l0_cw,(10,1))
-l0_df = np.reshape(l0_df,(10,1))
-
+#l1_advgan = np.reshape(l1_advgan,(10,1))
+#l1_fgsm = np.reshape(l1_fgsm,(10,1))
+#l1_ours = np.reshape(l1_ours,(10,1))
+#l1_cw = np.reshape(l1_cw,(10,1))
+#l1_df = np.reshape(l1_df,(10,1))
 #
-l1_advgan = np.reshape(l1_advgan,(10,1))
-l1_fgsm = np.reshape(l1_fgsm,(10,1))
-l1_ours = np.reshape(l1_ours,(10,1))
-l1_cw = np.reshape(l1_cw,(10,1))
-l1_df = np.reshape(l1_df,(10,1))
-
-l2_advgan = np.reshape(l2_advgan,(10,1))
-l2_fgsm = np.reshape(l2_fgsm,(10,1))
-l2_ours = np.reshape(l2_ours,(10,1))
-l2_cw = np.reshape(l2_cw,(10,1))
-l2_df = np.reshape(l2_df,(10,1))
-
-linf_advgan = np.reshape(linf_advgan,(10,1))
-linf_fgsm = np.reshape(linf_fgsm,(10,1))
-linf_ours = np.reshape(linf_ours,(10,1))
-linf_cw = np.reshape(linf_cw,(10,1))
-linf_df = np.reshape(linf_df,(10,1))
-
-ssim_advgan = np.reshape(ssim_advgan,(10,1))
-ssim_fgsm = np.reshape(ssim_fgsm,(10,1))
-ssim_ours = np.reshape(ssim_ours,(10,1))
-ssim_cw = np.reshape(ssim_cw,(10,1))
-ssim_df = np.reshape(ssim_df,(10,1))
-
-psnr_advgan = np.reshape(psnr_advgan,(10,1))
-psnr_fgsm = np.reshape(psnr_fgsm,(10,1))
-psnr_ours = np.reshape(psnr_ours,(10,1))
-psnr_cw = np.reshape(psnr_cw,(10,1))
-psnr_df = np.reshape(psnr_df,(10,1))
-
-
-mnist_class = {'0','1','2','3','4','5','6','7','8','9'}
-y_pos = np.arange(len(mnist_class))
-bar_width = 0.15
-opacity = 0.8
-
-plt_fgsm = plt.bar(y_pos, l0_fgsm, bar_width, alpha=0.6, label='FGSM')
-plt_cw = plt.bar(y_pos + 1*bar_width, l0_df, bar_width, alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, l0_cw, bar_width, alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, l0_advgan, bar_width, alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, l0_ours, bar_width, alpha=0.6, label='Ours')
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('Loss')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
-##
-##
-plt_fgsm = plt.bar(y_pos, l1_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-plt_df = plt.bar(y_pos + 1*bar_width, l1_df, bar_width, align='center', alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, l1_cw, bar_width, align='center', alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, l1_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, l1_ours, bar_width, align='center', alpha=0.6, label='Ours')
+#l2_advgan = np.reshape(l2_advgan,(10,1))
+#l2_fgsm = np.reshape(l2_fgsm,(10,1))
+#l2_ours = np.reshape(l2_ours,(10,1))
+#l2_cw = np.reshape(l2_cw,(10,1))
+#l2_df = np.reshape(l2_df,(10,1))
 #
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('Loss')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
-##
-plt_fgsm = plt.bar(y_pos, l2_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-plt_df = plt.bar(y_pos + 1*bar_width, l2_df, bar_width, align='center', alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, l2_cw, bar_width, align='center', alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, l2_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, l2_ours, bar_width, align='center', alpha=0.6, label='Ours')
+#linf_advgan = np.reshape(linf_advgan,(10,1))
+#linf_fgsm = np.reshape(linf_fgsm,(10,1))
+#linf_ours = np.reshape(linf_ours,(10,1))
+#linf_cw = np.reshape(linf_cw,(10,1))
+#linf_df = np.reshape(linf_df,(10,1))
 #
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('Loss')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
-##
-plt_fgsm = plt.bar(y_pos, linf_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-plt_df = plt.bar(y_pos + 1*bar_width, linf_df, bar_width, align='center', alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, linf_cw, bar_width, align='center', alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, linf_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, linf_ours, bar_width, align='center', alpha=0.6, label='Ours')
+#ssim_advgan = np.reshape(ssim_advgan,(10,1))
+#ssim_fgsm = np.reshape(ssim_fgsm,(10,1))
+#ssim_ours = np.reshape(ssim_ours,(10,1))
+#ssim_cw = np.reshape(ssim_cw,(10,1))
+#ssim_df = np.reshape(ssim_df,(10,1))
 #
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('Loss')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
-##
-plt_fgsm = plt.bar(y_pos, ssim_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-plt_df = plt.bar(y_pos + 1*bar_width, ssim_df, bar_width, align='center', alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, ssim_cw, bar_width, align='center', alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, ssim_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, ssim_ours, bar_width, align='center', alpha=0.6, label='Ours')
+#psnr_advgan = np.reshape(psnr_advgan,(10,1))
+#psnr_fgsm = np.reshape(psnr_fgsm,(10,1))
+#psnr_ours = np.reshape(psnr_ours,(10,1))
+#psnr_cw = np.reshape(psnr_cw,(10,1))
+#psnr_df = np.reshape(psnr_df,(10,1))
 #
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('SSIM')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
-##
-plt_fgsm = plt.bar(y_pos, psnr_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
-plt_df = plt.bar(y_pos + 1*bar_width, psnr_df, bar_width, align='center', alpha=0.6, label='DeepFool')
-plt_cw = plt.bar(y_pos + 2*bar_width, psnr_cw, bar_width, align='center', alpha=0.6, label='CW')
-plt_advgan = plt.bar(y_pos + 3*bar_width, psnr_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
-plt_ours = plt.bar(y_pos + 4*bar_width, psnr_ours, bar_width, align='center', alpha=0.6, label='Ours')
 #
-plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
-plt.xlabel('Class')
-plt.ylabel('PSNR (dB)')
-plt.legend(framealpha=0.5)
-plt.tight_layout()
-plt.show()
+#mnist_class = {'0','1','2','3','4','5','6','7','8','9'}
+#y_pos = np.arange(len(mnist_class))
+#bar_width = 0.15
+#opacity = 0.8
+#
+#plt_fgsm = plt.bar(y_pos, l0_fgsm, bar_width, alpha=0.6, label='FGSM')
+#plt_cw = plt.bar(y_pos + 1*bar_width, l0_df, bar_width, alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, l0_cw, bar_width, alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, l0_advgan, bar_width, alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, l0_ours, bar_width, alpha=0.6, label='Ours')
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('Loss')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
+###
+###
+#plt_fgsm = plt.bar(y_pos, l1_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_df = plt.bar(y_pos + 1*bar_width, l1_df, bar_width, align='center', alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, l1_cw, bar_width, align='center', alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, l1_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, l1_ours, bar_width, align='center', alpha=0.6, label='Ours')
+##
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('Loss')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
+###
+#plt_fgsm = plt.bar(y_pos, l2_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_df = plt.bar(y_pos + 1*bar_width, l2_df, bar_width, align='center', alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, l2_cw, bar_width, align='center', alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, l2_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, l2_ours, bar_width, align='center', alpha=0.6, label='Ours')
+##
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('Loss')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
+###
+#plt_fgsm = plt.bar(y_pos, linf_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_df = plt.bar(y_pos + 1*bar_width, linf_df, bar_width, align='center', alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, linf_cw, bar_width, align='center', alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, linf_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, linf_ours, bar_width, align='center', alpha=0.6, label='Ours')
+##
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('Loss')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
+###
+#plt_fgsm = plt.bar(y_pos, ssim_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_df = plt.bar(y_pos + 1*bar_width, ssim_df, bar_width, align='center', alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, ssim_cw, bar_width, align='center', alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, ssim_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, ssim_ours, bar_width, align='center', alpha=0.6, label='Ours')
+##
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('SSIM')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
+###
+#plt_fgsm = plt.bar(y_pos, psnr_fgsm, bar_width, align='center', alpha=0.6, label='FGSM')
+#plt_df = plt.bar(y_pos + 1*bar_width, psnr_df, bar_width, align='center', alpha=0.6, label='DeepFool')
+#plt_cw = plt.bar(y_pos + 2*bar_width, psnr_cw, bar_width, align='center', alpha=0.6, label='CW')
+#plt_advgan = plt.bar(y_pos + 3*bar_width, psnr_advgan, bar_width, align='center', alpha=0.6, label='AdvGAN')
+#plt_ours = plt.bar(y_pos + 4*bar_width, psnr_ours, bar_width, align='center', alpha=0.6, label='Ours')
+##
+#plt.xticks(y_pos + bar_width, ('0','1','2','3','4','5','6','7','8','9'))
+#plt.xlabel('Class')
+#plt.ylabel('PSNR (dB)')
+#plt.legend(framealpha=0.5, loc=1)
+#plt.tight_layout()
+#plt.show()
 
 

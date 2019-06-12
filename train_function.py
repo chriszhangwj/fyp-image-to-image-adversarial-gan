@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from noise import pnoise2
 from utils import toZeroThreshold
-from discriminators import Attn
 torch.manual_seed(0)
 #from operator import itemgetter
 
@@ -276,7 +275,7 @@ def train_plot_cifar10(G, D, f, target, is_targeted, thres, criterion_adv, crite
         optimizer_D.zero_grad()
         if i % num_steps == 0:
             # Train the Discriminator
-            loss_real = criterion_gan(D(img_real), valid)
+            loss_real = criterion_gan(D(img_real), valid*0.8)
             loss_fake = criterion_gan(D(img_fake.detach()), fake)
             loss_d = 0.5*loss_real + 0.5*loss_fake 
             loss_d.backward(torch.ones_like(loss_d))
@@ -662,3 +661,89 @@ def train_baseline_CIFAR10(G, D, f, criterion_adv, criterion_gan, criterion_aux,
             
     return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist, loss_fake_hist, loss_aux_hist
 
+def train_patchgan_CIFAR10(G, D, f, criterion_adv, criterion_gan, criterion_aux, alpha, beta, gamma, lam, train_loader, optimizer_G, optimizer_D, epoch, epochs, device, num_steps=3, verbose=True):
+    n = 0
+    acc = 0 # attack success rate
+    num_steps = num_steps
+    G.train()
+    D.train()
+    loss_adv_hist = np.array([]).reshape(0,1)
+    loss_gan_hist = np.array([]).reshape(0,1)
+    loss_hinge_hist = np.array([]).reshape(0,1)
+    loss_g_hist = np.array([]).reshape(0,1)
+    loss_d_hist = np.array([]).reshape(0,1)
+    loss_real_hist = np.array([]).reshape(0,1)
+    #loss_fake_hist = np.array([]).reshape(0,1)
+    
+    for i, (img, label) in enumerate(train_loader):
+        img_real = Variable(img.to(device))
+        for param in D.parameters():
+             param.requires_grad = False
+        optimizer_G.zero_grad()
+
+        img_fake = torch.clamp(G(img_real), -1, 1)
+
+        pert = img_fake - img_real # pert is for the entire batch
+        y_pred = f(img_fake)
+        # Train the Generator
+        # adversarial loss
+        y_true = Variable(label.to(device))
+        loss_adv = criterion_adv(y_pred, y_true, is_targeted=False)
+        acc += torch.sum(torch.max(y_pred, 1)[1] != y_true).item()
+
+        # GAN Generator loss
+        loss_fake = D(img_fake)
+        loss_gan = criterion_gan(loss_fake, True)
+        # perturbation loss
+        loss_hinge_1 = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=1, dim=1)))
+        
+        loss_hinge_2 = torch.mean(torch.max(torch.zeros(1, ).type(y_pred.type()), torch.norm(pert.view(pert.size(0), -1), p=2, dim=1)))
+
+        loss_hinge = 1 * loss_hinge_1 + 0 * loss_hinge_2
+        
+        # total generator loss
+        loss_g = beta * loss_adv + alpha*loss_gan + gamma*loss_hinge            
+        
+        # total generator loss
+        #loss_g = 0.1*loss_adv + alpha*loss_gan + beta*loss_hinge      
+        loss_g.backward(torch.ones_like(loss_g))
+        optimizer_G.step()
+        
+        if i % num_steps == 0:
+            for param in D.parameters():
+                param.requires_grad = True
+            optimizer_D.zero_grad()
+            #print('update D')
+            # Train the Discriminator
+            #loss_real = criterion_gan(D(img_real), valid*0.9) #label-smoothing
+            #loss_real = criterion_gan(D(img_real), valid*0.5)
+            #loss_fake = criterion_gan(D(img_fake.detach()), fake)
+            
+            pred_real = D(img_real)
+            pred_fake = D(img_fake.detach())
+            loss_real = criterion_gan(pred_real, True)
+            print(loss_real)
+            loss_fake = criterion_gan(pred_fake, False)
+            print(loss_fake)
+            loss_d = 0.5*loss_real + 0.5*loss_fake
+            loss_d.backward(torch.ones_like(loss_d))
+            optimizer_D.step()
+
+        n += img_real.size(0)
+        
+        loss_adv=loss_adv.cpu()
+        loss_gan=loss_gan.cpu()
+        loss_hinge=loss_hinge.cpu()
+        loss_g = loss_g.cpu()
+        loss_d = loss_d.cpu()
+        loss_real = loss_real.cpu()
+        #loss_fake = loss_fake.cpu()
+        loss_adv_hist=np.vstack([loss_adv_hist, loss_adv.detach().numpy()])
+        loss_gan_hist=np.vstack([loss_gan_hist, loss_gan.detach().numpy()])
+        loss_hinge_hist=np.vstack([loss_hinge_hist, loss_hinge.detach().numpy()])
+        loss_g_hist=np.vstack([loss_g_hist, loss_g.detach().numpy()])
+        loss_d_hist=np.vstack([loss_d_hist, loss_d.detach().numpy()])
+        loss_real_hist=np.vstack([loss_real_hist, loss_real.detach().numpy()])
+        #loss_fake_hist=np.vstack([loss_fake_hist, loss_fake.detach().numpy()])
+            
+    return acc/n,loss_adv_hist,loss_gan_hist,loss_hinge_hist, loss_g_hist, loss_d_hist, loss_real_hist

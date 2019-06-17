@@ -74,75 +74,76 @@ def returnCAM(feature_conv, weight_softmax, class_idx):
 #cv2.imwrite('images/cifar10/cam/CAM.jpg', result)
 
 # test on adversaries
-img_fake_orig = cv2.imread('images/cifar10/cam/adv.png') # [32,32,3]
-height, width, _ = img_fake_orig.shape
+#i=0
+#img_fake_orig = cv2.imread('images/cifar10/cam/fake_fgsm/%d_adv.png'%(i)) # [32,32,3]
+#height, width, _ = img_fake_orig.shape
+#
+#img_fake = np.transpose(img_fake_orig, (2, 0, 1))
+#img_fake = torch.from_numpy(img_fake).float().to(device) 
+#img_fake = torch.unsqueeze(img_fake,0) # [0,255]
+#img_fake = img_fake/255.0 # [0,1]
+#img_fake = (img_fake*2)-1
+#logit, _ = net(img_fake)
+#h_x = F.softmax(logit, dim=1).data.squeeze()
+#probs, idx = h_x.sort(0, True)
+#print(idx[0].item(), classes[idx[0]], probs[0].item())
+#CAMs = returnCAM(feature_blobs[0], weight_softmax, [idx[0].item()])
+#heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET) # [-1,1]
+#result = heatmap * 0.3 + img_fake_orig * 0.5
+#result = result
+#cv2.imwrite('images/cifar10/cam/fake_fgsm/%d_adv_cam.png'%(i), result)
 
-img_fake = np.transpose(img_fake_orig, (2, 0, 1))
-img_fake = torch.from_numpy(img_fake).float().to(device) 
-img_fake = torch.unsqueeze(img_fake,0)
-logit, _ = net(img_fake)
-h_x = F.softmax(logit, dim=1).data.squeeze()
-probs, idx = h_x.sort(0, True)
-print(idx[0].item(), classes[idx[0]], probs[0].item())
-CAMs = returnCAM(feature_blobs[0], weight_softmax, [idx[0].item()])
-heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET)
-result = heatmap * 0.3 + img_fake_orig * 0.5
-cv2.imwrite('images/cifar10/cam/adv_cam.png', result)
 
 
-
-def plot_cam(net):
+def tile_cam():
     arr = np.zeros((32*4, 32*10, 3), dtype=np.float64)
     for i in range(10):
-        path = 'images/cifar10/cam'
-        images = os.listdir(path)
-        images.sort()
+        path = 'images/cifar10/cam/real_fgsm'
         img_real = '%d.png'%(i)
         img_path = os.path.join(path, img_real)
-        img_real_orig = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        height, width, _ = img_real_orig.shape
-        img_real = np.transpose(img_real, (2, 0, 1))
-        img_real = torch.from_numpy(img_real).float().to(device) 
-        img_real = torch.unsqueeze(img_real,0)
-        logit, _ = net(img_real)
-        h_x = F.softmax(logit, dim=1).data.squeeze()
-        probs, idx = h_x.sort(0, True)
-        print(idx[0].item(), classes[idx[0]], probs[0].item())
-        CAMs = returnCAM(feature_blobs[0], weight_softmax, [idx[0].item()])
-        heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET)
-        img_real_cam = heatmap * 0.3 + img_real_orig * 0.5
-        img_real_cam = img_real_cam/255.0
-        img_real_orig = img_real_orig/255.0
+        img_real = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_real = img_real/255.0
         
+        path = 'images/cifar10/cam/real_fgsm_cam'
+        img_real_cam = '%d_cam.png'%(i)
+        img_path = os.path.join(path, img_real_cam)
+        img_real_cam = cv2.imread(img_path, cv2.IMREAD_COLOR)[...,::-1] # convert BGR to RGB
+        img_real_cam = img_real_cam/255.0
+        
+        path = 'images/cifar10/cam/fake_fgsm'
         img_fake = '%d_adv.png'%(i)
         img_path = os.path.join(path, img_fake)
-        img_fake_orig = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        height, width, _ = img_fake_orig.shape
-        img_fake = np.transpose(img_fake, (2, 0, 1))
-        img_fake = torch.from_numpy(img_fake).float().to(device) 
-        img_fake = torch.unsqueeze(img_fake,0)
-        logit, _ = net(img_fake)
-        h_x = F.softmax(logit, dim=1).data.squeeze()
-        probs, idx = h_x.sort(0, True)
-        print(idx[0].item(), classes[idx[0]], probs[0].item())
-        CAMs = returnCAM(feature_blobs[0], weight_softmax, [idx[0].item()])
-        heatmap = cv2.applyColorMap(cv2.resize(CAMs[0], (width, height)), cv2.COLORMAP_JET)
-        img_fake_cam = heatmap * 0.3 + img_fake_orig * 0.5
-        img_fake_cam = img_fake_cam/255.0
-        img_fake_orig = img_fake_orig/255.0
+        img_fake = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img_fake = img_fake/255.0
         
+        path = 'images/cifar10/cam/fake_fgsm_cam'
+        img_fake_cam = '%d_adv_cam.png'%(i)
+        img_path = os.path.join(path, img_fake_cam)
+        img_fake_cam = cv2.imread(img_path, cv2.IMREAD_COLOR)[...,::-1]
+        img_fake_cam = img_fake_cam/255.0
+        
+        print(np.shape(img_real))
         a=0
         b = i
-        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real_orig
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real
         a = 1
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_real_cam
         a = 2
-        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake_orig
+        arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake
         a = 3
         arr[a*32: (a+1)*32, b*32: (b+1)*32, :] = img_fake_cam
-    plt.figure(figsize=(15,5))
+    plt.figure(figsize=(17,7))
     ax = plt.gca()
     ax.imshow(arr)
     plt.axis('off')
     plt.show() 
     return arr
+
+tile_cam()
+##
+#img = cv2.imread('images/cifar10/cam/9_cam.png')
+#img = img.astype(np.float64)
+#img = img/255.0
+#plt.figure(figsize=(2,2))
+#ax=plt.gca()
+#ax.imshow(img)
